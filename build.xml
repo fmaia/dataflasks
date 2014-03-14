@@ -1,0 +1,29 @@
+<project>
+
+	<property name="lib.dir"     value="lib"/>
+
+    <path id="classpath">
+    	<fileset dir="${lib.dir}" includes="**/*.jar"/>
+	</path>
+	
+    <target name="clean">
+        <delete dir="build"/>
+    </target>
+
+    <target name="compile">
+        <mkdir dir="build/classes"/>
+        <javac srcdir="src" destdir="build/classes" classpathref="classpath" includeantruntime="false" />
+    </target>
+
+    <target name="jar" depends="compile">
+        
+        <jar destfile="build/stratus.jar" basedir="build/classes">
+            <manifest>
+                <attribute name="Main-Class" value="simulation.MainSimulation"/>
+            </manifest>
+        	<zipgroupfileset dir="${lib.dir}" includes="*.jar" excludes="*.config"/>
+        	
+        </jar>
+    </target>
+
+</project>
