@@ -19,7 +19,8 @@ public class GroupConstruction {
 	private boolean local;
 	private int localinterval;
 	
-	public GroupConstruction(long id,double position, int replicationfactorMin,int replicationfactorMax, int maxage, boolean local,int localinterval){
+	public GroupConstruction(long id,double position, int replicationfactorMin,
+			int replicationfactorMax, int maxage, boolean local,int localinterval){
 		this.id = id;
 		this.position = position;
 		this.ngroups = 1;

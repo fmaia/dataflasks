@@ -138,12 +138,10 @@ public class BootstrapperImpl implements Bootstrapper {
 
 				int cviewsize = this.tosend.size();
 
-				out.println(1); //Everybody starts by thinking there is only one partition
+				//out.println(1); //Everybody starts by thinking there is only one partition
 				out.println(cviewsize);
 				for(String s : this.tosend){
 					out.println(s);
-					out.println(this.sysport);
-					out.println(this.localport);
 					out.println(1);
 					out.println(20); //Forcing this data to be forgotten as fast as possible as it is only bootstrap data
 					out.println(1);

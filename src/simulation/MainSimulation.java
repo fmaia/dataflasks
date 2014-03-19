@@ -48,6 +48,13 @@ public class MainSimulation {
 			long boottime = 0L;
 			String peerlistfile = "peerlist.properties";
 			int cycles = 50;
+			long psssleepinterval = 1000L;
+			long pssboottime = 0L;
+			int repmax = 20;
+			int repmin = 10;
+			int maxage = 30;
+			boolean localmessage = true;
+			int localinterval = 15;
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
@@ -68,7 +75,8 @@ public class MainSimulation {
 				String ip = e[i].getProcess().getHost().getAddress().getCanonicalHostName();
 				Double npos = start;
 				start = start + step;
-				e[i].queue().initPeer(ip,lastid+1,npos,loadfromfile,firstip);
+				e[i].queue().initPeer(ip,lastid+1L,npos,loadfromfile,firstip,psssleepinterval,
+						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval);
 				entrylist.put(ip, e[i]);
 
 			}
