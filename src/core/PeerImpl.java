@@ -1,7 +1,6 @@
 package core;
 
 import java.io.IOException;
-import java.util.Map;
 
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -40,8 +39,33 @@ public class PeerImpl implements Peer {
 	private boolean localmessage;
 	private int localinterval;
 	
+	//RUN OUTSIDE SIMULATION ONLY
+	
+	
+	@Override
+	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
+			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
+				int repmin, int maxage, boolean localmessage, int localinterval,String loglevel) {
+		this.ip = ip;
+		this.id = id;
+		this.position = position;
+		this.loadfromfile = loadfromfile;
+		this.bootip = bootip;
+		this.repmax = repmax;
+		this.repmin = repmin;
+		this.maxage = maxage;
+		this.localmessage = localmessage;
+		this.localinterval = localinterval;
+		this.pssSleepInterval = psssleepinterval;
+		this.pssboottime = pssboottime;
+		this.pssviewsize = pssviewsize;
+		this.loglevel = loglevel;
+		return this;
+	}
+
 	@Override
 	public void main(String[] args) {
+		
 		
 		
 		//SET LOG
@@ -78,7 +102,8 @@ public class PeerImpl implements Peer {
 		else{
 			this.log.debug("Initializing Store, PSS and Group Construction from scratch.");
 			GroupConstruction flasks = new GroupConstruction(this.id,this.position,
-								this.repmin,this.repmax,this.maxage,this.localmessage,this.localinterval);
+								this.repmin,this.repmax,this.maxage,this.localmessage,
+													this.localinterval,this.store,this.log);
 			PSS cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
 									this.pssboottime,this.pssviewsize,this.log,flasks);
 			PSSThread pssthread = new PSSThread(cyclon,this.ip,this.log);
@@ -95,26 +120,6 @@ public class PeerImpl implements Peer {
 	//RUN OUTSIDE SIMULATION ONLY
 	
 	
-	@Override
-	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
-			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
-				int repmin, int maxage, boolean localmessage, int localinterval) {
-		this.ip = ip;
-		this.id = id;
-		this.position = position;
-		this.loadfromfile = loadfromfile;
-		this.bootip = bootip;
-		this.repmax = repmax;
-		this.repmin = repmin;
-		this.maxage = maxage;
-		this.localmessage = localmessage;
-		this.localinterval = localinterval;
-		this.pssSleepInterval = psssleepinterval;
-		this.pssboottime = pssboottime;
-		this.pssviewsize = pssviewsize;
-		return this;
-	}
-
 	@Override
 	public Long[] getStoredKeys(long now) {
 		// TODO Auto-generated method stub
@@ -150,7 +155,7 @@ public class PeerImpl implements Peer {
 
 	@Override
 	public String getPSSLog() {
-		// TODO Auto-generated method stub
+		
 		return null;
 	}
 

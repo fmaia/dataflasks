@@ -1,5 +1,8 @@
 package simulation;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 
 import pt.minha.api.Entry;
@@ -44,17 +47,18 @@ public class MainSimulation {
 			int viewsize = 10;
 			int number_of_peers = 50;
 			boolean loadfromfile = false;
-			long timeinterval = 1L;
-			long boottime = 0L;
+			long timeinterval = 1;
+			long boottime = 20;
 			String peerlistfile = "peerlist.properties";
 			int cycles = 50;
 			long psssleepinterval = 1000L;
-			long pssboottime = 0L;
+			long pssboottime = 20000L;
 			int repmax = 20;
 			int repmin = 10;
 			int maxage = 30;
 			boolean localmessage = true;
 			int localinterval = 15;
+			String loglevel = "debug";
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
@@ -75,9 +79,12 @@ public class MainSimulation {
 				String ip = e[i].getProcess().getHost().getAddress().getCanonicalHostName();
 				Double npos = start;
 				start = start + step;
-				e[i].queue().initPeer(ip,lastid+1L,npos,loadfromfile,firstip,psssleepinterval,
-						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval);
+				long pid = lastid+1L;
+				lastid = pid;
+				e[i].queue().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
+						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel);
 				entrylist.put(ip, e[i]);
+				boot.addIP(ip,pid,npos);
 
 			}
 
@@ -109,7 +116,6 @@ public class MainSimulation {
 				peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
 				//queue peer main
 				val.getValue().queue().main(new String[0]);
-				boot.addIP(p.getIP(),p.getID(),p.getPOS());
 			}
 
 			//Writing data for Fake Load Balancer
@@ -128,6 +134,10 @@ public class MainSimulation {
 			for(int i=0;i<=cycles;i++){
 				churnperiodT = churnperiodT + 1;
 				long now = world.run(timeinterval,TimeUnit.SECONDS);
+				
+				//Logging
+				logKeysetAndPSS(now,false);
+				
 				now = now - startuptime;
 			}
 
@@ -145,4 +155,48 @@ public class MainSimulation {
 
 	}
 
+	private static void logKeysetAndPSS(long now, boolean keyset){
+		FileWriter fstream;
+		try {
+			fstream = new FileWriter("logs/keyset/"+(now/1000000000)+".txt");
+			BufferedWriter fout = new BufferedWriter(fstream);
+			HashMap<Long,Integer> storedKeys = new HashMap<Long,Integer>();
+			
+			for(Peer pi : peers.values()){
+				String s = pi.getPSSLog(); 
+				if(!s.equals("")){
+					fout.write(s);
+					fout.write("\n");
+				}
+			}
+			fout.close();
+			
+			if(keyset){
+				for(Peer pi : peers.values()){
+					Long [] tmp = pi.getStoredKeys(now);
+					for (Long l : tmp){
+						Integer ti = storedKeys.get(l);
+						if(ti==null){
+							storedKeys.put(l,1);
+						}
+						else{
+							storedKeys.put(l,ti+1);
+						}
+					}
+				}
+				//writing keyset to disk for offline processing
+				fstream = new FileWriter("logs/keyset/"+(now/1000000000)+"STOREDKEYS.txt");
+				fout = new BufferedWriter(fstream);
+				for(Long chave :storedKeys.keySet()){
+					fout.write(chave+" "+storedKeys.get(chave)+"\n");
+				}
+				fout.close();
+			}
+			
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
 }

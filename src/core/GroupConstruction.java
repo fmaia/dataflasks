@@ -1,7 +1,15 @@
 package core;
 
+import java.io.IOException;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
 import java.util.ArrayList;
 
+import org.apache.log4j.Logger;
+
+import pss.PSSMessage;
+import store.KVStore;
 import common.PeerData;
 
 public class GroupConstruction {
@@ -18,9 +26,11 @@ public class GroupConstruction {
 	private int maxage;
 	private boolean local;
 	private int localinterval;
+	private KVStore store;
+	private Logger log;
 	
 	public GroupConstruction(long id,double position, int replicationfactorMin,
-			int replicationfactorMax, int maxage, boolean local,int localinterval){
+			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, Logger log){
 		this.id = id;
 		this.position = position;
 		this.ngroups = 1;
@@ -31,6 +41,8 @@ public class GroupConstruction {
 		this.maxage = maxage;
 		this.local = local;
 		this.localinterval = localinterval;
+		this.store = thestore;
+		this.log = log;
 	}
 	
 
@@ -88,10 +100,9 @@ public class GroupConstruction {
 	}
 
 
-	public void receiveMessage(ArrayList<PeerData> received, int cycle) {
+	public synchronized void receiveMessage(ArrayList<PeerData> received, int cycle) {
 		ArrayList<PeerData> tosend = new ArrayList<PeerData>();
 
-		synchronized(this){
 			//AGING VIEW
 			for(PeerData r : localview){
 				r.setAge(r.getAge() + 1);
@@ -141,6 +152,7 @@ public class GroupConstruction {
 				this.ngroups = this.ngroups*2;
 			}
 			this.group = group(this.position);
+			this.store.updatePartition(this.group, this.ngroups);
 
 			if(local){
 				PeerData myself = new PeerData(this.ip,this.ngroups,0,this.group,this.position,this.id);
@@ -150,17 +162,34 @@ public class GroupConstruction {
 				}
 			}
 
-		}
 		//SEND LOCAL VIEW TO NEIGHBORS
 		if(local && (cycle%this.localinterval==0)){
 			for(PeerData r : tosend){
 				if(r.getID()!=this.id){
-					//SEND MESSAGE!!!
-					//r.noderef.receiveLocalMessage(tosend);
+					//SEND MESSAGE
+					PSSMessage tsmsg = new PSSMessage(tosend, PSSMessage.TYPE.LOCAL, this.ip);
+					this.sendMsg(r, tsmsg);
 				}
 			}
 		}
 
+	}
+	
+	private synchronized int sendMsg(PeerData p, PSSMessage psg){
+		try {
+			DatagramSocket socket = new DatagramSocket();
+			byte[] toSend = psg.encodeMessage();
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.pssport);
+			this.log.debug("sending message to "+p.getIp()+":"+Peer.pssport);
+			socket.send(packet);	
+			this.log.info("message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
+			socket.close();
+			return 0;
+		} catch (IOException e) {
+			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.pssport);
+			//e.printStackTrace();
+		}
+		return 1;
 	}
 
 }

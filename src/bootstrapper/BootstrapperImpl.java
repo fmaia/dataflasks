@@ -47,6 +47,7 @@ public class BootstrapperImpl implements Bootstrapper {
 		this.aliveIds = new HashMap<String,Long>();
 		this.alivePos = new HashMap<String,Double>();
 		this.fila = new ConcurrentLinkedQueue<ArrayList<String>>();
+		this.initialnodes = 10;
 		return this;
 	}
 	
@@ -119,15 +120,12 @@ public class BootstrapperImpl implements Bootstrapper {
 		private Socket s;
 		private Logger log;
 		private ArrayList<String> tosend;
-		private int sysport,localport;
 		private BootstrapperImpl parent;
 		
-		public BootWorker(Socket p, int sysport, int localport, Logger log,BootstrapperImpl parent){
+		public BootWorker(Socket p, Logger log,BootstrapperImpl parent){
 			this.s = p;
 			this.log = log;
 			this.tosend = parent.pollFila();
-			this.sysport = sysport;
-			this.localport = localport;
 			this.parent = parent;
 		}
 		public void run(){
@@ -178,7 +176,7 @@ public class BootstrapperImpl implements Bootstrapper {
 		//Configuring Log ------------------------------------------------------------
 		
 		
-		//this.bootfila(viewsize, 120);
+		//this.bootfila(viewsize, 50);
 		
 		//Initiating Server
 		try {
@@ -195,7 +193,7 @@ public class BootstrapperImpl implements Bootstrapper {
 				log.debug("Bootstraper waiting for packet....");
 				System.out.println("Bootstraper waiting for packet....");
 				Socket clientSocket = ss.accept();
-				new BootWorker(clientSocket,Peer.port, Peer.pssport, this.log,this).start();
+				new BootWorker(clientSocket, this.log,this).start();
 				log.info("BootWorker launched.");
 			} catch (Exception e) {
 				log.error("Bootstraper ERROR in run()! "+e.getMessage()+" "+e.getLocalizedMessage()+" "+e.getCause());
