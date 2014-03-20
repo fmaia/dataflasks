@@ -14,20 +14,27 @@ import common.PeerData;
 public class PSSMessage {
 
 	public ArrayList<PeerData> list;
-	public TYPE type;
+	public int type;
 	public String sender;
 	
-	public static enum TYPE {
-		GLOBAL, LOCAL, RESPONSE
+	public class TYPE {
+		public static final int GLOBAL = 0;
+		public static final int LOCAL = 1;
+		public static final int RESPONSE = 2;
+		
 	}
 	
-	public PSSMessage(TYPE t, String sender){
+	//public static enum TYPE {
+	//	GLOBAL, LOCAL, RESPONSE
+	//}
+	
+	public PSSMessage(int t, String sender){
 		this.type = t;
 		this.list = new ArrayList<PeerData>();
 		this.sender = sender;
 	}
 	
-	public PSSMessage(ArrayList<PeerData> p,TYPE t, String sender){
+	public PSSMessage(ArrayList<PeerData> p,int t, String sender){
 		this.type = t;
 		this.sender = sender;
 		this.list = new ArrayList<PeerData>();

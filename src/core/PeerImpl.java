@@ -130,7 +130,7 @@ public class PeerImpl implements Peer {
 						this.repmin,this.repmax,this.maxage,this.localmessage,
 						this.localinterval,this.store,this.log);
 				this.cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
-						this.pssboottime,this.pssviewsize,this.log,flasks);
+						this.pssboottime,this.pssviewsize,this.log,this.flasks);
 				this.pssthread = new PSSThread(cyclon,this.ip,this.log);
 				pssthread.start();
 				cyclon.start();

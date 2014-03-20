@@ -96,7 +96,7 @@ public class PSS extends Thread implements Serializable{
 				connected = true;
 			}
 			catch(Exception e){
-				log.error("ERROR conecting to socket. Retrying...");
+				this.log.error("ERROR conecting to socket. Retrying...");
 				try {
 					Thread.sleep(this.grandom.nextInt(5000));
 				} catch (InterruptedException e1) {
@@ -186,7 +186,7 @@ public class PSS extends Thread implements Serializable{
 						this.sentPeerData.remove(this.ip);
 						PSSMessage msgglobal = new PSSMessage(toglobal,TYPE.GLOBAL,this.ip);
 						this.sendMsg(target, msgglobal);
-						log.debug("message sent to "+target);
+						log.debug("CYCLE Message sent to "+target);
 
 					}
 					
@@ -200,20 +200,22 @@ public class PSS extends Thread implements Serializable{
 	
 	public synchronized void processMessage(PSSMessage pmsg){
 		//Incorporate peers in our state
-		this.log.debug("PSS received message to process.");
+		log.debug("PSS received message to process.");
 		if(pmsg==null){
-			this.log.error("PSS processMessage MESSAGE is NULL!");
+			log.error("PSS processMessage MESSAGE is NULL!");
 			return;
 		}
 		try{
 			if(pmsg.type==TYPE.LOCAL){
 				this.groupc.receiveLocalMessage(pmsg.list);
+				log.info("Message is Local.");
 			}
 			else{
 				this.incorporateToGlobal(pmsg);
-				this.groupc.receiveLocalMessage(pmsg.list);
+				this.groupc.receiveMessage(pmsg.list);;
+				log.info("Message is Global.");
 			}
-			this.log.debug("Message processed by PSS.");
+			log.info("Message processed by PSS.");
 		}
 		catch(Exception e){
 			log.error("processMessage ERROR");

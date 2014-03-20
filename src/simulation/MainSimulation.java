@@ -15,7 +15,10 @@ import pt.minha.api.sim.Simulation;
 import pt.minha.api.Process;
 import utilities.TimeAdvancer;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -187,12 +190,20 @@ public class MainSimulation {
 			BufferedWriter fout = new BufferedWriter(fstream);
 			HashMap<Long,Integer> storedKeys = new HashMap<Long,Integer>();
 			
+			HashMap<Long,String> toprint = new HashMap<Long,String>();
+			
 			for(Peer pi : peers.values()){
 				String s = pi.getPSSLog(); 
 				if(!s.equals("")){
-					fout.write(s);
-					fout.write("\n");
+					toprint.put(pi.getID(), s);
 				}
+			}
+			
+			List<Long> keys = new ArrayList<Long>(toprint.keySet());
+			Collections.sort(keys);
+			for(Long key : keys){
+				fout.write(toprint.get(key));
+				fout.write("\n");
 			}
 			fout.close();
 			
@@ -232,7 +243,7 @@ public class MainSimulation {
 			Entry<Main> ycsb = ycsbproc.createEntry();
 			ycsb.after(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbhost.getAddress().getCanonicalHostName(),"-p",
-					"stratus.port="+Peer.port,"-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
+					"stratus.port=65000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

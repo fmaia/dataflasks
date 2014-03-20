@@ -32,6 +32,8 @@ public class GroupConstruction {
 	private KVStore store;
 	private Logger log;
 	
+	private int cycle;
+	
 	public GroupConstruction(long id,double position, int replicationfactorMin,
 			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, Logger log){
 		this.id = id;
@@ -46,6 +48,8 @@ public class GroupConstruction {
 		this.localinterval = localinterval;
 		this.store = thestore;
 		this.log = log;
+		this.log.info("GroupConstruction initialized.");
+		this.cycle = 0;
 	}
 	
 	//Use outside simulation
@@ -91,6 +95,7 @@ public class GroupConstruction {
 	
 
 	public synchronized void receiveLocalMessage(ArrayList<PeerData> received) {
+		this.log.info("GroupConstruction - LOCAL message received");
 		//ADD RECEIVED
 		for (PeerData r : received){
 			if(group(r.getPos())==this.group && !(r.getID()==this.id)){
@@ -110,7 +115,9 @@ public class GroupConstruction {
 	}
 
 
-	public synchronized void receiveMessage(ArrayList<PeerData> received, int cycle) {
+	public synchronized void receiveMessage(ArrayList<PeerData> received) {
+		this.log.info("GroupConstruction - PSS message received");
+		this.cycle = this.cycle + 1;
 		ArrayList<PeerData> tosend = new ArrayList<PeerData>();
 
 			//AGING VIEW
@@ -152,7 +159,7 @@ public class GroupConstruction {
 
 			//SEARCH FOR VIOLATIONS
 			int estimation = this.localview.size(); //countEqual();
-			
+			this.log.info("GroupConstruction - estimation = "+estimation);
 			if((estimation+1)<this.replicationfactorMin){
 				if(this.ngroups>1){
 					this.ngroups = this.ngroups/2; 
@@ -172,13 +179,16 @@ public class GroupConstruction {
 				}
 			}
 
-		//SEND LOCAL VIEW TO NEIGHBORS
-		if(local && (cycle%this.localinterval==0)){
-			for(PeerData r : tosend){
-				if(r.getID()!=this.id){
+			//SEND LOCAL VIEW TO NEIGHBORS
+			if(this.local && (this.cycle%this.localinterval==0)){
+				this.log.debug("Local Group Dissemination Active. Cycle: "+cycle);
+				for(PeerData r : tosend){
+					if(r.getID()!=this.id){
 					//SEND MESSAGE
+					this.log.debug("Group Construction Sending local message...");
 					PSSMessage tsmsg = new PSSMessage(tosend, TYPE.LOCAL, this.ip);
 					this.sendMsg(r, tsmsg);
+					this.log.debug("Group Construction local message sent to "+r.getID());
 				}
 			}
 		}
@@ -190,13 +200,13 @@ public class GroupConstruction {
 			DatagramSocket socket = new DatagramSocket();
 			byte[] toSend = psg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.pssport);
-			this.log.debug("sending message to "+p.getIp()+":"+Peer.pssport);
+			this.log.debug("GroupConstruction - sending message to "+p.getIp()+":"+Peer.pssport);
 			socket.send(packet);	
-			this.log.info("message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
+			this.log.info("GroupConstruction - message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
 			socket.close();
 			return 0;
 		} catch (IOException e) {
-			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.pssport);
+			this.log.error("ERROR sendget in GROUPCONSTRUCTION. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.pssport);
 			//e.printStackTrace();
 		}
 		return 1;
