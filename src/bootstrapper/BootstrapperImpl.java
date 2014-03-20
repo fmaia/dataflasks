@@ -174,9 +174,7 @@ public class BootstrapperImpl implements Bootstrapper {
 		capp.setName(myself);
 		log.addAppender(capp);
 		//Configuring Log ------------------------------------------------------------
-		
-		
-		//this.bootfila(viewsize, 50);
+	
 		
 		//Initiating Server
 		try {
@@ -187,7 +185,6 @@ public class BootstrapperImpl implements Bootstrapper {
 		this.running = true;
 		
 		this.log.info("Bootstrapper initialized:"+this.aliveIPs.toString());
-		System.out.println("Before ccyle");
 		while (running) {
 			try {
 				log.debug("Bootstraper waiting for packet....");

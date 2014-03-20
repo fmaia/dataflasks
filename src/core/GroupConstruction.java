@@ -9,8 +9,11 @@ import java.util.ArrayList;
 import org.apache.log4j.Logger;
 
 import pss.PSSMessage;
+import pss.PSSMessage.TYPE;
 import store.KVStore;
 import common.PeerData;
+
+
 
 public class GroupConstruction {
 
@@ -174,7 +177,7 @@ public class GroupConstruction {
 			for(PeerData r : tosend){
 				if(r.getID()!=this.id){
 					//SEND MESSAGE
-					PSSMessage tsmsg = new PSSMessage(tosend, PSSMessage.TYPE.LOCAL, this.ip);
+					PSSMessage tsmsg = new PSSMessage(tosend, TYPE.LOCAL, this.ip);
 					this.sendMsg(r, tsmsg);
 				}
 			}

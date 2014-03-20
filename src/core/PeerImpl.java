@@ -151,7 +151,6 @@ public class PeerImpl implements Peer {
 				log.info("PEER ACTIVE THREAD FINISHED "+myself);
 
 				//STOPPING passive thread - for now sendind a message. It should be done by .close on the socket when working- minha issue
-				//pass.stop();
 				DatagramSocket socket = new DatagramSocket();
 				byte[] toSend = new Message(23,this.ip,Peer.port,this.id).encodeMessage();
 				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.ip), Peer.port);

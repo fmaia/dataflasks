@@ -48,20 +48,6 @@ public class PassiveThread implements Runnable {
 		}
 	}
 
-	/*
-	public void stop(){
-		running = false;
-		try{
-		
-		ss.getChannel().close();
-		ss.close();
-		}
-		catch(Exception e){
-			log.debug("ERROR in PASSIVE THREAD STOP");
-		}
-		log.debug("PassiveThread stop invoked.");
-	}*/
-	//-------------------------------------------------------------------
 	
 	@Override
 	public void run() {

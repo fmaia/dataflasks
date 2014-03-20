@@ -5,9 +5,11 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
 
 import pt.minha.api.Entry;
 import pt.minha.api.Host;
+import pt.minha.api.Main;
 import pt.minha.api.World;
 import pt.minha.api.sim.Simulation;
 import pt.minha.api.Process;
@@ -69,6 +71,8 @@ public class MainSimulation {
 			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"));
 			float replychance = Float.parseFloat(prop.getProperty("replychance"));
 			boolean smart = Boolean.parseBoolean(prop.getProperty("smart"));
+			long initload = Long.parseLong(prop.getProperty("initload"));
+			long initrun = Long.parseLong(prop.getProperty("initrun"));
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
@@ -114,6 +118,16 @@ public class MainSimulation {
 			time.queue().main(timeargs);
 
 
+			//YCSB
+			if(initload!=0){
+				lastid = lastid + 1;
+				queueYCSBLoad(lastid,initload);
+			}
+			if(initrun!=0){
+				lastid = lastid + 1;
+				queueYCSBRun(lastid,initrun);
+			}
+			
 			//Runing INITIAL PEERS
 
 			//Writing data for Fake Load Balancer
@@ -205,6 +219,79 @@ public class MainSimulation {
 			}
 			
 		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private static void queueYCSBRun(long id,long runtime){
+		try{
+			Host ycsbhost = world.createHost();
+			Process ycsbproc = ycsbhost.createProcess();
+			Entry<Main> ycsb = ycsbproc.createEntry();
+			ycsb.after(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
+					"-p","stratus.ip="+ycsbhost.getAddress().getCanonicalHostName(),"-p",
+					"stratus.port="+Peer.port,"-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Throwable e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+	}
+	
+	private static void queueYCSBLoad(long id,long initload){
+		Host ycsbhost;
+		try {
+			ycsbhost = world.createHost();
+			Process ycsbproc = ycsbhost.createProcess();
+			Entry<Main> ycsb = ycsbproc.createEntry();
+			ycsb.after(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
+					"-p","stratus.ip="+ycsbhost.getAddress().getCanonicalHostName(),"-p",
+					"stratus.port="+Peer.port,"-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
+		} catch (IllegalArgumentException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchMethodException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (Throwable e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
