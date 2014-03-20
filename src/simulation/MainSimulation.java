@@ -1,6 +1,7 @@
 package simulation;
 
 import java.io.BufferedWriter;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -14,6 +15,7 @@ import utilities.TimeAdvancer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 import bootstrapper.Bootstrapper;
@@ -44,26 +46,29 @@ public class MainSimulation {
 			entrylist = new HashMap<String, Entry<Peer>>();
 			peers = new HashMap<String,Peer>();
 
-			int viewsize = 10;
-			int number_of_peers = 50;
-			boolean loadfromfile = false;
-			long timeinterval = 1;
-			long boottime = 20;
-			String peerlistfile = "peerlist.properties";
-			int cycles = 50;
-			long psssleepinterval = 1000L;
-			long pssboottime = 20000L;
-			int repmax = 20;
-			int repmin = 10;
-			int maxage = 30;
-			boolean localmessage = true;
-			int localinterval = 15;
-			String loglevel = "debug";
+			Properties prop = new Properties();
+			prop.load(new FileInputStream("config/config.properties"));
+			
+			int viewsize = Integer.parseInt(prop.getProperty("viewsize"));
+			int number_of_peers = Integer.parseInt(prop.getProperty("number_of_peers"));
+			boolean loadfromfile = Boolean.parseBoolean(prop.getProperty("loadfromfile"));
+			long timeinterval = Long.parseLong(prop.getProperty("timeinterval"));
+			long boottime = Long.parseLong(prop.getProperty("boottime"));
+			String peerlistfile = prop.getProperty("peerlistfile");
+			int cycles = Integer.parseInt(prop.getProperty("cycles"));
+			long psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"));
+			long pssboottime = Long.parseLong(prop.getProperty("pssboottime"));
+			int repmax = Integer.parseInt(prop.getProperty("repmax"));
+			int repmin = Integer.parseInt(prop.getProperty("repmin"));
+			int maxage = Integer.parseInt(prop.getProperty("maxage"));
+			boolean localmessage = Boolean.parseBoolean(prop.getProperty("localmessage"));
+			int localinterval = Integer.parseInt(prop.getProperty("localinterval"));
+			String loglevel = prop.getProperty("loglevel");
 			//ACTIVE THREADS
-			boolean testingviewonly = false;
-			long activeinterval = 120000;
-			float replychance = 1;
-			boolean smart = true;
+			boolean testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
+			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"));
+			float replychance = Float.parseFloat(prop.getProperty("replychance"));
+			boolean smart = Boolean.parseBoolean(prop.getProperty("smart"));
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();

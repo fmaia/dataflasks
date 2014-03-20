@@ -52,6 +52,7 @@ public class PeerImpl implements Peer {
 	private int localinterval;
 	
 	//ACTIVE THREADS
+	private AntiEntropy active;
 	private boolean testingviewonly;
 	private long activeinterval;
 	private float replychance;
@@ -137,7 +138,7 @@ public class PeerImpl implements Peer {
 
 			//Starting the core threads
 			if(!this.testingviewonly){
-				AntiEntropy active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),log);
+				active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),log);
 				Thread tactive = new Thread(active);
 
 				PassiveThread pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),log);
@@ -174,8 +175,7 @@ public class PeerImpl implements Peer {
 	
 	@Override
 	public Long[] getStoredKeys(long now) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.store.getStoredKeys();
 	}
 
 	@Override
@@ -203,7 +203,10 @@ public class PeerImpl implements Peer {
 	public void stopPeer() {
 		this.cyclon.stopPSS();
 		this.pssthread.stopThread();
-
+		if(!this.testingviewonly){
+			this.active.setRunning(false);
+		}
+		this.log.info("Peer Stopped.");
 	}
 
 	@Override
