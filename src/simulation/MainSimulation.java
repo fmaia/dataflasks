@@ -59,6 +59,11 @@ public class MainSimulation {
 			boolean localmessage = true;
 			int localinterval = 15;
 			String loglevel = "debug";
+			//ACTIVE THREADS
+			boolean testingviewonly = false;
+			long activeinterval = 120000;
+			float replychance = 1;
+			boolean smart = true;
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
@@ -82,7 +87,8 @@ public class MainSimulation {
 				long pid = lastid+1L;
 				lastid = pid;
 				e[i].queue().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
-						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel);
+						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
+						testingviewonly,activeinterval,replychance,smart);
 				entrylist.put(ip, e[i]);
 				boot.addIP(ip,pid,npos);
 

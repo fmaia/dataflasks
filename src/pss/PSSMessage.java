@@ -17,7 +17,7 @@ public class PSSMessage {
 	public TYPE type;
 	public String sender;
 	
-	public enum TYPE {
+	public static enum TYPE {
 		GLOBAL, LOCAL, RESPONSE
 	}
 	

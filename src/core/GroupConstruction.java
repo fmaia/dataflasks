@@ -45,7 +45,14 @@ public class GroupConstruction {
 		this.log = log;
 	}
 	
-
+	//Use outside simulation
+	public String getInfo(){
+		String res = "INFO "+this.id+" "+this.group+" "+this.ngroups;
+		return res;
+	}
+	//----------------------
+	
+	
 	public double getPosition(){
 		return this.position;
 	}
