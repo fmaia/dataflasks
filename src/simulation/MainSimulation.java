@@ -61,8 +61,8 @@ public class MainSimulation {
 			long boottime = Long.parseLong(prop.getProperty("boottime"));
 			String peerlistfile = prop.getProperty("peerlistfile");
 			int cycles = Integer.parseInt(prop.getProperty("cycles"));
-			long psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"));
-			long pssboottime = Long.parseLong(prop.getProperty("pssboottime"));
+			long psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"))*1000L;
+			long pssboottime = (Long.parseLong(prop.getProperty("pssboottime"))+boottime)*1000L;
 			int repmax = Integer.parseInt(prop.getProperty("repmax"));
 			int repmin = Integer.parseInt(prop.getProperty("repmin"));
 			int maxage = Integer.parseInt(prop.getProperty("maxage"));
@@ -71,11 +71,11 @@ public class MainSimulation {
 			String loglevel = prop.getProperty("loglevel");
 			//ACTIVE THREADS
 			boolean testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
-			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"));
+			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"))*1000L;
 			float replychance = Float.parseFloat(prop.getProperty("replychance"));
 			boolean smart = Boolean.parseBoolean(prop.getProperty("smart"));
-			long initload = Long.parseLong(prop.getProperty("initload"));
-			long initrun = Long.parseLong(prop.getProperty("initrun"));
+			long initload = Long.parseLong(prop.getProperty("initload"))+boottime;
+			long initrun = Long.parseLong(prop.getProperty("initrun"))+boottime;
 
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
