@@ -96,7 +96,7 @@ public class GroupConstruction {
 	
 
 	public synchronized void receiveLocalMessage(ArrayList<PeerData> received) {
-		this.log.info("GroupConstruction - LOCAL message received");
+		this.log.debug("GroupConstruction - LOCAL message received");
 		//ADD RECEIVED
 		for (PeerData r : received){
 			if(group(r.getPos())==this.group && !(r.getID()==this.id)){
@@ -117,7 +117,7 @@ public class GroupConstruction {
 
 
 	public synchronized void receiveMessage(ArrayList<PeerData> received) {
-		this.log.info("GroupConstruction - PSS message received");
+		this.log.debug("GroupConstruction - PSS message received");
 		this.cycle = this.cycle + 1;
 		
 
@@ -160,7 +160,7 @@ public class GroupConstruction {
 
 			//SEARCH FOR VIOLATIONS
 			int estimation = this.localview.size(); //countEqual();
-			this.log.info("GroupConstruction - estimation = "+estimation);
+			this.log.debug("GroupConstruction - estimation = "+estimation);
 			if((estimation+1)<this.replicationfactorMin){
 				if(this.ngroups>1){
 					this.ngroups = this.ngroups/2; 
@@ -205,7 +205,7 @@ public class GroupConstruction {
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.pssport);
 			this.log.debug("GroupConstruction - sending message to "+p.getIp()+":"+Peer.pssport);
 			socket.send(packet);	
-			this.log.info("GroupConstruction - message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
+			this.log.debug("GroupConstruction - message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
 			socket.close();
 			return 0;
 		} catch (IOException e) {

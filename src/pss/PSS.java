@@ -186,7 +186,7 @@ public class PSS extends Thread implements Serializable{
 						this.sentPeerData.remove(this.ip);
 						PSSMessage msgglobal = new PSSMessage(toglobal,TYPE.GLOBAL,this.ip);
 						this.sendMsg(target, msgglobal);
-						log.debug("CYCLE Message sent to "+target);
+						log.info("CYCLE Message sent to "+target);
 
 					}
 					
@@ -208,12 +208,12 @@ public class PSS extends Thread implements Serializable{
 		try{
 			if(pmsg.type==TYPE.LOCAL){
 				this.groupc.receiveLocalMessage(pmsg.list);
-				log.info("Message is Local.");
+				log.debug("Message is Local.");
 			}
 			else{
 				this.incorporateToGlobal(pmsg);
 				this.groupc.receiveMessage(pmsg.list);;
-				log.info("Message is Global.");
+				log.debug("Message is Global.");
 			}
 			log.info("Message processed by PSS.");
 		}
@@ -231,7 +231,7 @@ public class PSS extends Thread implements Serializable{
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), this.port);
 			this.log.debug("sending message to "+p.getIp()+":"+this.port);
 			socket.send(packet);	
-			this.log.info("message sent to "+p.getIp()+":"+this.port+" Message:"+ packet.toString());
+			this.log.debug("message sent to "+p.getIp()+":"+this.port+" Message:"+ packet.toString());
 			socket.close();
 			return 0;
 		} catch (IOException e) {
@@ -289,7 +289,7 @@ public class PSS extends Thread implements Serializable{
 	}
 
 	private synchronized void incorporateToGlobal(PSSMessage msg){
-		log.info("message received from "+msg.sender);
+		log.debug("message received from "+msg.sender);
 		ArrayList<PeerData> source = new ArrayList<PeerData>();
 		for(PeerData ptmp : msg.list){
 			if(ptmp.getIp()!=this.ip){
@@ -328,7 +328,7 @@ public class PSS extends Thread implements Serializable{
 				}
 				PSSMessage msgglobal = new PSSMessage(tosend,TYPE.RESPONSE,this.ip);
 				this.sendMsg(target, msgglobal);
-				log.debug("answer sent to "+msg.sender);
+				log.info("answer sent to "+msg.sender);
 			}
 		}
 	}
