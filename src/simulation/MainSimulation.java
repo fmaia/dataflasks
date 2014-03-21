@@ -74,9 +74,15 @@ public class MainSimulation {
 			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"))*1000L;
 			float replychance = Float.parseFloat(prop.getProperty("replychance"));
 			boolean smart = Boolean.parseBoolean(prop.getProperty("smart"));
-			long initload = Long.parseLong(prop.getProperty("initload"))+boottime;
-			long initrun = Long.parseLong(prop.getProperty("initrun"))+boottime;
-
+			long initload = Long.parseLong(prop.getProperty("initload"));
+			long initrun = Long.parseLong(prop.getProperty("initrun"));
+			System.out.println("times; bootime: "+boottime+" ycsbLoad: "+initload+" ycsbRun: "+initrun);
+			if(initload!=0){
+				initload = (long) (initload + boottime);
+			}
+			if(initrun!=0){
+				initrun = (long) (initrun + boottime);
+			}
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
 			Process bootproc = bootstrapperHost.createProcess();
@@ -121,14 +127,13 @@ public class MainSimulation {
 			time.queue().main(timeargs);
 
 
+			String loadip="", runip="";
 			//YCSB
 			if(initload!=0){
-				lastid = lastid + 1;
-				queueYCSBLoad(lastid,initload);
+				loadip = queueYCSBLoad(initload);
 			}
 			if(initrun!=0){
-				lastid = lastid + 1;
-				queueYCSBRun(lastid,initrun);
+				runip = queueYCSBRun(initrun);
 			}
 			
 			//Runing INITIAL PEERS
@@ -150,6 +155,14 @@ public class MainSimulation {
 			PrintWriter out = new PrintWriter(peerlistfile);
 			out.println(peerlist);
 			out.close();
+			
+			//COPY PEERLIST file to YCSB node virtual storage
+			if(!loadip.equals("")){
+				Runtime.getRuntime().exec("cp peerlist.properties "+loadip);
+			}
+			if(!runip.equals("")){
+				Runtime.getRuntime().exec("cp peerlist.properties "+runip);
+			}
 
 			long startuptime = 0;
 			if(boottime!=0){
@@ -163,10 +176,10 @@ public class MainSimulation {
 				churnperiodT = churnperiodT + 1;
 				long now = world.run(timeinterval,TimeUnit.SECONDS);
 				
+				now = now - startuptime;
 				//Logging
 				logKeysetAndPSS(now,false);
 				
-				now = now - startuptime;
 			}
 
 
@@ -239,19 +252,21 @@ public class MainSimulation {
 	
 
 	
-	private static void queueYCSBRun(long id,long runtime){
+	private static String queueYCSBRun(long runtime){
+		String ycsbip = "";
 		try{
 			Host ycsbhost = world.createHost();
 			Process ycsbproc = ycsbhost.createProcess();
 			Entry<Main> ycsb = ycsbproc.createEntry();
 			
-			String ycsbip = ycsbhost.getAddress().getCanonicalHostName();
+			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			
-			ycsb.after(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
+			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=65000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
+			
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -277,23 +292,26 @@ public class MainSimulation {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+		return ycsbip;
 	}
 	
-	private static void queueYCSBLoad(long id,long initload){
+	private static String queueYCSBLoad(long initload){
 		Host ycsbhost;
+		String ycsbip = "";
 		try {
 			ycsbhost = world.createHost();
 			Process ycsbproc = ycsbhost.createProcess();
 			Entry<Main> ycsb = ycsbproc.createEntry();
 			
-			String ycsbip = ycsbhost.getAddress().getCanonicalHostName();
+			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			
-			ycsb.after(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
+			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=64000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
+			
+			
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -319,6 +337,6 @@ public class MainSimulation {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+		return ycsbip;
 	}
 }

@@ -91,13 +91,13 @@ public class StratusClient extends DB {
 		
 		//File where all nodes are described - used for fake load balancer
 		String peerlistfile = "peerlist.properties";
-
+		log.debug("Going to read peerlist.");
 		BufferedReader f;
 		try {
 			f = new BufferedReader(new FileReader(peerlistfile));
-
+			log.debug("Going to read peerlist - readline");
 			String peerslisting = f.readLine();
-			log.debug(peerslisting);
+			log.debug("Peerlist read:"+peerslisting);
 			f.close();
 
 			String[] plist = peerslisting.split(" ");
@@ -109,7 +109,7 @@ public class StratusClient extends DB {
 				
 				PeerData tmp = new PeerData(ip,0,0,0,0,pid);
 				peers.add(tmp);
-				log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
+				//log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -120,6 +120,7 @@ public class StratusClient extends DB {
 		}
 		//Starting the peer sampling service
 		lb = new FakeLoadBalancer(peers,log, new Random());
+		
 		//For now the number of replies needed is one and it is hardcoded
 		int nputreplies = 1;
 		//The Client will always have the id 0 - req id is distinguished by PORT
