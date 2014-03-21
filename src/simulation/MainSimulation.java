@@ -77,12 +77,14 @@ public class MainSimulation {
 			long initload = Long.parseLong(prop.getProperty("initload"));
 			long initrun = Long.parseLong(prop.getProperty("initrun"));
 			System.out.println("times; bootime: "+boottime+" ycsbLoad: "+initload+" ycsbRun: "+initrun);
-			if(initload!=0){
-				initload = (long) (initload + boottime);
-			}
-			if(initrun!=0){
-				initrun = (long) (initrun + boottime);
-			}
+//			if(initload!=0){
+//				initload = initload + boottime;
+//			}
+//			if(initrun!=0){
+//				initrun = initrun + boottime;
+//			}
+			
+			
 			// Bootstrapper
 			Host bootstrapperHost = world.createHost();
 			Process bootproc = bootstrapperHost.createProcess();
@@ -175,7 +177,7 @@ public class MainSimulation {
 			for(int i=0;i<=cycles;i++){
 				churnperiodT = churnperiodT + 1;
 				long now = world.run(timeinterval,TimeUnit.SECONDS);
-				
+				System.out.println("Simulation time: "+now);
 				now = now - startuptime;
 				//Logging
 				logKeysetAndPSS(now,false);
@@ -262,7 +264,7 @@ public class MainSimulation {
 			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
-			
+			System.out.println("Scheduling YCSB run at "+runtime+" s");
 			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=65000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
@@ -306,7 +308,7 @@ public class MainSimulation {
 			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
-			
+			System.out.println("Scheduling YCSB load at "+initload+" s");
 			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=64000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");

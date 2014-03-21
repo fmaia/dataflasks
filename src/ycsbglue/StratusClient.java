@@ -64,6 +64,8 @@ public class StratusClient extends DB {
 
 	public void init() throws DBException{
 		
+		
+		System.out.println("Initializing StratusClient...");
 		Properties ycsbProps = getProperties();
 		
 		String myIp = ycsbProps.getProperty("stratus.ip");
