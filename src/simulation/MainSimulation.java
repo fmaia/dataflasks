@@ -236,13 +236,21 @@ public class MainSimulation {
 		
 	}
 	
+	
+
+	
 	private static void queueYCSBRun(long id,long runtime){
 		try{
 			Host ycsbhost = world.createHost();
 			Process ycsbproc = ycsbhost.createProcess();
 			Entry<Main> ycsb = ycsbproc.createEntry();
+			
+			String ycsbip = ycsbhost.getAddress().getCanonicalHostName();
+			Runtime.getRuntime().exec("mkdir "+ycsbip);
+			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
+			
 			ycsb.after(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
-					"-p","stratus.ip="+ycsbhost.getAddress().getCanonicalHostName(),"-p",
+					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=65000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
@@ -278,9 +286,14 @@ public class MainSimulation {
 			ycsbhost = world.createHost();
 			Process ycsbproc = ycsbhost.createProcess();
 			Entry<Main> ycsb = ycsbproc.createEntry();
+			
+			String ycsbip = ycsbhost.getAddress().getCanonicalHostName();
+			Runtime.getRuntime().exec("mkdir "+ycsbip);
+			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
+			
 			ycsb.after(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
-					"-p","stratus.ip="+ycsbhost.getAddress().getCanonicalHostName(),"-p",
-					"stratus.port="+Peer.port,"-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
+					"-p","stratus.ip="+ycsbip,"-p",
+					"stratus.port=64000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

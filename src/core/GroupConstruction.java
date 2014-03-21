@@ -61,6 +61,14 @@ public class GroupConstruction {
 	//----------------------
 	
 	
+	public synchronized int getCycle() {
+		return cycle;
+	}
+
+	public synchronized void setCycle(int cycle) {
+		this.cycle = cycle;
+	}
+
 	public double getPosition(){
 		return this.position;
 	}
@@ -118,8 +126,6 @@ public class GroupConstruction {
 
 	public synchronized void receiveMessage(ArrayList<PeerData> received) {
 		this.log.debug("GroupConstruction - PSS message received");
-		this.cycle = this.cycle + 1;
-		
 
 			//AGING VIEW
 			for(PeerData r : localview){

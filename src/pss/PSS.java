@@ -171,6 +171,7 @@ public class PSS extends Thread implements Serializable{
 					time = time + this.interval;
 					this.log.info("TIME: "+time);
 					cycles = cycles + 1;
+					this.groupc.setCycle(cycles);
 					synchronized(this){
 
 						//CYCLON

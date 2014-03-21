@@ -109,7 +109,7 @@ public class StratusClient extends DB {
 				
 				PeerData tmp = new PeerData(ip,0,0,0,0,pid);
 				peers.add(tmp);
-				//log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
+				log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
 			}
 		} catch (FileNotFoundException e) {
 			// TODO Auto-generated catch block
@@ -119,10 +119,10 @@ public class StratusClient extends DB {
 			e.printStackTrace();
 		}
 		//Starting the peer sampling service
-		lb = new FakeLoadBalancer(peers,log, new Random(12345678));
-		//The Client will always have the id 0 - req id is distinguished by PORT
+		lb = new FakeLoadBalancer(peers,log, new Random());
 		//For now the number of replies needed is one and it is hardcoded
 		int nputreplies = 1;
+		//The Client will always have the id 0 - req id is distinguished by PORT
 		client = new Client(new Long(0).toString(),lb,myIp,myPort,nputreplies,log);
 		log.debug("StratusClient started.");
 	}
