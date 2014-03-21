@@ -188,7 +188,6 @@ public class BootstrapperImpl implements Bootstrapper {
 		while (running) {
 			try {
 				log.debug("Bootstraper waiting for packet....");
-				System.out.println("Bootstraper waiting for packet....");
 				Socket clientSocket = ss.accept();
 				new BootWorker(clientSocket, this.log,this).start();
 				log.info("BootWorker launched.");

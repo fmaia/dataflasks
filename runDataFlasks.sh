@@ -3,7 +3,7 @@
 rm -rf logs
 mkdir logs logs/keyset
 
-mycommand="java -Xmx10G -XX:ReservedCodeCacheSize=512M -XX:PermSize=5120M -XX:MaxPermSize=5120M -jar build/stratus.jar "
+mycommand="java -Dorg.slf4j.simpleLogger.defaultLogLevel=error -Xmx10G -XX:ReservedCodeCacheSize=512M -XX:PermSize=5120M -XX:MaxPermSize=5120M -jar build/stratus.jar "
 echo $mycommand
 $mycommand
 

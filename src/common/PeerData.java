@@ -139,7 +139,7 @@ public class PeerData implements Serializable{
 	
 	@Override
 	public Object clone(){
-		PeerData tmp = new PeerData(new String(this.ip),this.nslices,this.age,this.slice,this.pos, this.myID);
+		PeerData tmp = new PeerData(new String(this.ip),this.nslices,this.age,this.slice,this.pos,this.myID);
 		return tmp;
 	}
 	

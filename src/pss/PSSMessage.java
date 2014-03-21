@@ -24,9 +24,6 @@ public class PSSMessage {
 		
 	}
 	
-	//public static enum TYPE {
-	//	GLOBAL, LOCAL, RESPONSE
-	//}
 	
 	public PSSMessage(int t, String sender){
 		this.type = t;
@@ -49,18 +46,7 @@ public class PSSMessage {
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));
 		this.list = new ArrayList<PeerData>();
 
-		int type = dis.readInt();
-		if(type==0){
-			this.type = TYPE.GLOBAL;
-		}
-		else{
-			if(type==1){
-				this.type = TYPE.LOCAL;
-			}
-			else{
-				this.type = TYPE.RESPONSE;
-			}
-		}
+		this.type = dis.readInt();
 		this.sender = dis.readUTF();
 		int listSize = dis.readInt();
 
@@ -92,17 +78,7 @@ public class PSSMessage {
 		try {
 			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			DataOutputStream out = new DataOutputStream(baos);
-			if(this.type==TYPE.GLOBAL){
-				out.writeInt(0);
-			}
-			else{
-				if(this.type==TYPE.LOCAL){
-					out.writeInt(1);
-				}
-				else{
-					out.writeInt(2);
-				}
-			}
+			out.writeInt(this.type);
 			out.writeUTF(this.sender);
 			out.writeInt(this.list.size());
 			for(PeerData p : this.list){

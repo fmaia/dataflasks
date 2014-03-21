@@ -126,7 +126,7 @@ public class PeerImpl implements Peer {
 			}
 			else{
 				this.log.debug("Initializing Store, PSS and Group Construction from scratch.");
-				this.flasks = new GroupConstruction(this.id,this.position,
+				this.flasks = new GroupConstruction(this.ip,this.id,this.position,
 						this.repmin,this.repmax,this.maxage,this.localmessage,
 						this.localinterval,this.store,this.log);
 				this.cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
