@@ -75,6 +75,13 @@ public class GroupConstruction {
 	}
 	//----------------------
 	
+	public synchronized ArrayList<PeerData> getLocalView(){
+		ArrayList<PeerData> res = new ArrayList<PeerData>();
+		for (PeerData p : this.localview){
+			res.add((PeerData)p.clone());
+		}
+		return res;
+	}
 	
 	public synchronized int getCycle() {
 		return cycle;

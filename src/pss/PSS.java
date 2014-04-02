@@ -164,6 +164,7 @@ public class PSS extends Thread implements Serializable{
 	
 	public void stopPSS(){
 		this.running = false;
+		this.log.info("PSS stopped.");
 	}
 	
 	//----------------------------
@@ -183,29 +184,30 @@ public class PSS extends Thread implements Serializable{
 			
 				try {
 					Thread.sleep(this.interval);
-					time = time + this.interval;
-					this.log.info("TIME: "+time);
-					cycles = cycles + 1;
-					this.groupc.setCycle(cycles);
-					synchronized(this){
+					if(running){ //Treat the case where the peer was stopped but the thread was assleep;
+						time = time + this.interval;
+						this.log.info("TIME: "+time);
+						cycles = cycles + 1;
+						this.groupc.setCycle(cycles);
+						synchronized(this){
 
-						//CYCLON
-						this.insertSentToView();
-						this.ageGlobal();
-						PeerData target = this.getOlderGlobal();
-						this.myview.remove(target.getIp());
-						ArrayList<PeerData> toglobal = this.selectToSendGlobal(target.getIp());
-						this.sentPeerData = new ArrayList<PeerData>();
-						for (PeerData p : toglobal){
-							this.sentPeerData.add((PeerData)p.clone());
+							//CYCLON
+							this.insertSentToView();
+							this.ageGlobal();
+							PeerData target = this.getOlderGlobal();
+							this.myview.remove(target.getIp());
+							ArrayList<PeerData> toglobal = this.selectToSendGlobal(target.getIp());
+							this.sentPeerData = new ArrayList<PeerData>();
+							for (PeerData p : toglobal){
+								this.sentPeerData.add((PeerData)p.clone());
+							}
+							this.sentPeerData.remove(this.ip);
+							PSSMessage msgglobal = new PSSMessage(toglobal,TYPE.GLOBAL,this.ip);
+							this.sendMsg(target, msgglobal);
+							log.info("CYCLE Message sent to "+target);
+
 						}
-						this.sentPeerData.remove(this.ip);
-						PSSMessage msgglobal = new PSSMessage(toglobal,TYPE.GLOBAL,this.ip);
-						this.sendMsg(target, msgglobal);
-						log.info("CYCLE Message sent to "+target);
-
 					}
-					
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
@@ -427,9 +429,7 @@ public class PSS extends Thread implements Serializable{
 	}
 	
 	public synchronized ArrayList<PeerData> getSliceLocalView(){
-		ArrayList<PeerData> res = new ArrayList<PeerData>();
-		
-		return res;
+		return this.groupc.getLocalView();
 	}
 
 

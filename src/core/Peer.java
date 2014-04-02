@@ -26,7 +26,7 @@ public interface Peer {
 	
 	public void main(String[] args);
 	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
-			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
+			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart);
 	public Long[] getStoredKeys(long now);

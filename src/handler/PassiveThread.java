@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -55,6 +56,7 @@ public class PassiveThread implements Runnable {
 		this.rnd = rnd;
 		
 		this.exService = Executors.newFixedThreadPool(100);
+		this.log.info("PassiveThread Initialized.");
 		
 		try {
 			this.ss = new DatagramSocket(port,InetAddress.getByName(ip));
@@ -63,28 +65,31 @@ public class PassiveThread implements Runnable {
 		}
 	}
 
+	public void stop(){
+		this.ss.close();
+		this.running = false;
+	}
 	
 	@Override
 	public void run() {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-				DatagramPacket packet = new DatagramPacket(new byte[1000],1000);
-				log.debug("PASSIVE waiting for packet....");
+				
+				DatagramPacket packet = new DatagramPacket(new byte[10000],10000);
+				log.info("PASSIVE waiting for packet....");
 				ss.receive(packet);
 				log.debug("PASSIVE packet received....");
 				Message msg = new Message(packet.getData());
 				log.info("MESSAGE RECIEVED of TYPE:"+msg.messagetype);
-				if(msg.messagetype==23){ //Shutdown message
-					running = false;
-				}
-				else{
-					this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg));
-					log.info("PASSIVE worker thread launched....");
-				}
-			} catch (Exception e) {
+				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg));
+				log.info("PASSIVE worker thread launched....");
+				
+			} catch (SocketException e) {
+				log.info("PassiveThread Server disconnected!");
+			} catch (IOException e) {
 				log.error("PassiveThread ERROR in run()!");
-			}
+			} 
 		}	
 
 	}

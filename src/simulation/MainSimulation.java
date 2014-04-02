@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 
+import pt.minha.api.ContainerException;
 import pt.minha.api.Entry;
 import pt.minha.api.Host;
 import pt.minha.api.Main;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import bootstrapper.Bootstrapper;
@@ -50,8 +52,30 @@ public class MainSimulation {
 	private static World world;
 	private static String firstip;
 	private static HashMap<String,Entry<Peer>> entrylist;
-	//private static HashMap<String,Entry<App>> removed;
 	private static HashMap<String,Peer> peers;
+	//Bootstrapper
+	private static Bootstrapper boot;
+	
+	//Peer Configs
+	private static int viewsize;
+	private static int number_of_peers;
+	private static boolean loadfromfile;
+	private static long timeinterval;
+	private static long boottime;
+	private static String peerlistfile;
+	private static int cycles;
+	private static long psssleepinterval;
+	private static int repmax;
+	private static int repmin;
+	private static int maxage;
+	private static boolean localmessage;
+	private static int localinterval;
+	private static String loglevel;
+	//ACTIVE THREADS
+	private static boolean testingviewonly;
+	private static long activeinterval;
+	private static float replychance;
+	private static boolean smart;
 
 
 
@@ -69,35 +93,45 @@ public class MainSimulation {
 			Properties prop = new Properties();
 			prop.load(new FileInputStream("config/config.properties"));
 			
-			int viewsize = Integer.parseInt(prop.getProperty("viewsize"));
-			int number_of_peers = Integer.parseInt(prop.getProperty("number_of_peers"));
-			boolean loadfromfile = Boolean.parseBoolean(prop.getProperty("loadfromfile"));
-			long timeinterval = Long.parseLong(prop.getProperty("timeinterval"));
-			long boottime = Long.parseLong(prop.getProperty("boottime"));
-			String peerlistfile = prop.getProperty("peerlistfile");
-			int cycles = Integer.parseInt(prop.getProperty("cycles"));
-			long psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"))*1000L;
-			long pssboottime = (Long.parseLong(prop.getProperty("pssboottime"))+boottime)*1000L;
-			int repmax = Integer.parseInt(prop.getProperty("repmax"));
-			int repmin = Integer.parseInt(prop.getProperty("repmin"));
-			int maxage = Integer.parseInt(prop.getProperty("maxage"));
-			boolean localmessage = Boolean.parseBoolean(prop.getProperty("localmessage"));
-			int localinterval = Integer.parseInt(prop.getProperty("localinterval"));
-			String loglevel = prop.getProperty("loglevel");
+			viewsize = Integer.parseInt(prop.getProperty("viewsize"));
+			number_of_peers = Integer.parseInt(prop.getProperty("number_of_peers"));
+			loadfromfile = Boolean.parseBoolean(prop.getProperty("loadfromfile"));
+			timeinterval = Long.parseLong(prop.getProperty("timeinterval"));
+			boottime = Long.parseLong(prop.getProperty("boottime"));
+			peerlistfile = prop.getProperty("peerlistfile");
+			cycles = Integer.parseInt(prop.getProperty("cycles"));
+			psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"))*1000L;
+			repmax = Integer.parseInt(prop.getProperty("repmax"));
+			repmin = Integer.parseInt(prop.getProperty("repmin"));
+			maxage = Integer.parseInt(prop.getProperty("maxage"));
+			localmessage = Boolean.parseBoolean(prop.getProperty("localmessage"));
+			localinterval = Integer.parseInt(prop.getProperty("localinterval"));
+			loglevel = prop.getProperty("loglevel");
 			//ACTIVE THREADS
-			boolean testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
-			long activeinterval = Long.parseLong(prop.getProperty("activeinterval"))*1000L;
-			float replychance = Float.parseFloat(prop.getProperty("replychance"));
-			boolean smart = Boolean.parseBoolean(prop.getProperty("smart"));
+			testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
+			activeinterval = (Long.parseLong(prop.getProperty("activeinterval"))+boottime)*1000L;
+			replychance = Float.parseFloat(prop.getProperty("replychance"));
+			smart = Boolean.parseBoolean(prop.getProperty("smart"));
+			//YCSB
 			long initload = Long.parseLong(prop.getProperty("initload"));
 			long initrun = Long.parseLong(prop.getProperty("initrun"));
-			System.out.println("times; bootime: "+boottime+" ycsbLoad: "+initload+" ycsbRun: "+initrun);
-//			if(initload!=0){
-//				initload = initload + boottime;
-//			}
-//			if(initrun!=0){
-//				initrun = initrun + boottime;
-//			}
+			//CHURN
+			String churn_type = prop.getProperty("churn_type");
+			long start_time = Long.parseLong(prop.getProperty("start_time"));
+			long stop_time = Long.parseLong(prop.getProperty("stop_time"));
+			long churn_interval = Long.parseLong(prop.getProperty("churn_interval"));
+			String churn_class = prop.getProperty("churn_class");
+			double churn_percentage = Double.parseDouble(prop.getProperty("churn_percentage"));
+			int nchurn = (int) Math.ceil(number_of_peers*churn_percentage);
+			System.out.println("times -> bootime: "+boottime+" ycsbLoad: "+initload+" ycsbRun: "+initrun);
+			System.out.println("churn -> type: "+churn_type+" class: "+churn_class+" start: "+start_time+" stop: "+stop_time+" interval: "+churn_interval+" percentage: "+churn_percentage);
+			
+			if(initload!=0){
+				initload = initload + boottime;
+			}
+			if(initrun!=0){
+				initrun = initrun + boottime;
+			}
 			
 			
 			// Bootstrapper
@@ -105,7 +139,7 @@ public class MainSimulation {
 			Process bootproc = bootstrapperHost.createProcess();
 			Entry<Bootstrapper> booter = bootproc.createEntry(bootstrapper.Bootstrapper.class,bootstrapper.BootstrapperImpl.class.getName());
 			firstip = bootstrapperHost.getAddress().getCanonicalHostName();
-			Bootstrapper boot = booter.call().initBootstrapper(0,viewsize,firstip);
+			boot = booter.call().initBootstrapper(0,viewsize,firstip);
 			booter.queue().main(new String[0]);
 
 			Entry<Peer>[] e = world.createEntries(number_of_peers,core.Peer.class,core.PeerImpl.class.getName());
@@ -122,7 +156,7 @@ public class MainSimulation {
 				long pid = lastid+1L;
 				lastid = pid;
 				e[i].queue().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
-						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
+						boottime*1000L,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 						testingviewonly,activeinterval,replychance,smart);
 				entrylist.put(ip, e[i]);
 				boot.addIP(ip,pid,npos);
@@ -187,16 +221,66 @@ public class MainSimulation {
 			}
 
 			int churnperiodT = 0;
-
+			
+			//Churn control variables
+			boolean churnonetime_done = false;
+			int constantcyclecount = 0;
+			int constantchurncycle = 1;
+			
+			//random
+			Random rnd = new Random();
+			
 			//Observation Cycles Code
 			for(int i=0;i<=cycles;i++){
+				
 				churnperiodT = churnperiodT + 1;
 				long now = world.run(timeinterval,TimeUnit.SECONDS);
-				System.out.println("Simulation time: "+now);
+				//System.out.println("Simulation time: "+now);
 				now = now - startuptime;
 				//Logging
 				logKeysetAndPSS(now,false);
 				
+				//Churn
+				if(churn_type.equals("onetime") && !churnonetime_done){
+					if(start_time<=i && stop_time>=i){
+						System.out.println("One time churn of "+nchurn+" nodes. Class:"+churn_class);
+						if(churn_class.equals("remove")){
+							//Remove nchurn nodes
+							for(int j=0;j<nchurn;j++){
+								System.out.println("Removing node.");
+								removePeer();
+							}
+						}
+						else{
+							if(churn_class.equals("add")){
+								//Add nchurn
+								for(int j=0;j<nchurn;j++){
+									System.out.println("Adding node.");
+									addPeer(rnd);
+								}
+							}
+							
+						}
+						churnonetime_done = true;
+					}
+				}
+				else{
+					if(churn_type.equals("constant")){
+						if(start_time<=i && stop_time>=i){
+							if(constantcyclecount%churn_interval==0){
+								//Remove and add nchurn nodes
+								System.out.println("Constant churn cycle "+constantchurncycle);
+								constantchurncycle = constantchurncycle +1;
+								for(int j=0;j<nchurn;j++){
+									removePeer();
+									addPeer(rnd);
+								}
+
+							}
+							constantcyclecount = constantcyclecount + 1;
+						}
+					}
+				}
 			}
 
 
@@ -213,6 +297,47 @@ public class MainSimulation {
 
 	}
 
+	//CHURN-----------------------------------------------------------------------------------------------
+	
+	private static void addPeer(Random rnd) throws ContainerException, IllegalArgumentException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+		
+		lastid = lastid + 1L;
+		Long id = lastid;
+    	Double position = new Double(rnd.nextDouble());
+    	
+		Host newhost = world.createHost();
+		Process newproc = newhost.createProcess();
+		String ip = newhost.getAddress().getCanonicalHostName();
+		
+		Entry<Peer> newpeer = newproc.createEntry(core.Peer.class,core.PeerImpl.class.getName());
+		Peer newpeerref = newpeer.call().initPeer(ip, id, position,loadfromfile,firstip,psssleepinterval,
+				0,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
+				testingviewonly,activeinterval,replychance,smart);
+		
+		entrylist.put(ip, newpeer);
+		peers.put(ip, newpeerref);
+		boot.addIP(ip, id, position);
+		newpeer.queue().main(new String[0]);
+		
+	}
+	
+	private static void removePeer() throws IOException{
+		ArrayList<String> ips = new ArrayList<String>();
+		for(String ipp : peers.keySet()){
+			ips.add(ipp);
+		}
+		Collections.shuffle(ips);
+		String iptoremove = ips.get(0);
+		Peer tor = peers.get(iptoremove);
+		tor.stopPeer();
+		entrylist.remove(iptoremove);
+		peers.remove(iptoremove);
+		boot.removeIP(iptoremove);
+	}
+	
+	//----------------------------------------------------------------------------------------------------
+	
+	
 	private static void logKeysetAndPSS(long now, boolean keyset){
 		FileWriter fstream;
 		try {
@@ -323,7 +448,7 @@ public class MainSimulation {
 			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
-			System.out.println("Scheduling YCSB load at "+initload+" s");
+			//System.out.println("Scheduling YCSB load at "+initload+" s");
 			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=64000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");

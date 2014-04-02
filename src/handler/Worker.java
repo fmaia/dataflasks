@@ -227,7 +227,7 @@ public class Worker implements Runnable {
 			else{
 				//Special internal get for anti-entropy
 				if(requestid.equals("intern")){
-					this.log.debug("Received Anti-Entropy reply.");
+					this.log.info("Received Anti-Entropy reply.");
 					temp = this.store.get(requestedkey);
 					if(temp!=null){
 						//Send value to Client
@@ -247,7 +247,7 @@ public class Worker implements Runnable {
 			break;
 		case 4:
 			//Exchange Operation
-			this.log.debug("Received Anti-Entropy request!.");
+			this.log.info("Received Anti-Entropy request!.");
 			HashSet<Long> mykeys = this.store.getKeys();
 			HashSet<Long> toRequest = new HashSet<Long>();
 			for(Long l : msg.keys){

@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 
 import org.apache.log4j.Logger;
 
@@ -69,6 +70,8 @@ public class PSSThread extends Thread {
 	//Used outside simulation!!!
 	public void stopThread(){
 		this.running = false;
+		this.ss.close();
+		this.log.info("PSSThread stopped.");
 	}
 	//-----------------
 	
@@ -85,8 +88,10 @@ public class PSSThread extends Thread {
 				work.start();
 				log.debug("PSS packet received....");
 				
-			} catch (Exception e) {
-				log.error("PassiveThread ERROR in run()! "+e.getMessage()+" "+e.getLocalizedMessage()+" "+e.getCause());
+			} catch (SocketException e) {
+				log.info("PSSThread Server disconnected!");
+			} catch (IOException e) {
+				log.error("PSSThread ERROR in run()!");
 			}
 		}	
 

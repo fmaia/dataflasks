@@ -19,12 +19,7 @@ import handler.AntiEntropy;
 import handler.PassiveThread;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.util.Random;
-
-import handler.Message;
 
 import org.apache.log4j.FileAppender;
 import org.apache.log4j.Level;
@@ -65,9 +60,11 @@ public class PeerImpl implements Peer {
 	private int maxage;
 	private boolean localmessage;
 	private int localinterval;
+
 	
 	//ACTIVE THREADS
 	private AntiEntropy active;
+	private PassiveThread pass;
 	private boolean testingviewonly;
 	private long activeinterval;
 	private float replychance;
@@ -124,7 +121,7 @@ public class PeerImpl implements Peer {
 			}
 			FileAppender capp = null;
 			try {
-				capp = new FileAppender(new PatternLayout("[%t] %-5p %c %x - %m%n"),"logs/"+myself+".txt");
+				capp = new FileAppender(new PatternLayout("[%d] %-5p %c %x - %m%n"),"logs/"+myself+".txt");
 			} catch (IOException e1) {
 
 				e1.printStackTrace();
@@ -132,15 +129,15 @@ public class PeerImpl implements Peer {
 			capp.setName(myself);
 			this.log.addAppender(capp);
 
-			this.log.debug("Initialized "+myself);
+			this.log.info("Initialized "+myself);
 
 			//START STORE + PSS + GROUP CONSTRUCTION
 			this.store = new KVStore(log);
 			if(this.loadfromfile){
-				this.log.debug("Loading data from file... - NOT IMPLEMENTED!");
+				this.log.info("Loading data from file... - NOT IMPLEMENTED!");
 			}
 			else{
-				this.log.debug("Initializing Store, PSS and Group Construction from scratch.");
+				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
 				this.flasks = new GroupConstruction(this.ip,this.id,this.position,
 						this.repmin,this.repmax,this.maxage,this.localmessage,
 						this.localinterval,this.store,this.log);
@@ -153,33 +150,24 @@ public class PeerImpl implements Peer {
 
 			//Starting the core threads
 			if(!this.testingviewonly){
+				this.log.info("Starting data related threads.");
 				active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),log);
 				Thread tactive = new Thread(active);
-
-				PassiveThread pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),log);
+				
+				pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),log);
 				Thread passive = new Thread(pass);
-
+				
 				passive.start();
 				tactive.start();
-
-				tactive.join();
-				log.info("PEER ACTIVE THREAD FINISHED "+myself);
-
-				//STOPPING passive thread - for now sendind a message. It should be done by .close on the socket when working- minha issue
-				DatagramSocket socket = new DatagramSocket();
-				byte[] toSend = new Message(23,this.ip,Peer.port,this.id).encodeMessage();
-				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.ip), Peer.port);
-				socket.send(packet);		
-				log.info("Passive Thread Shutdown Requested.");
-				socket.close();
-
+				this.log.info("Anti entropy and Passive threads started.");
+				
 				passive.join();
-				log.info("PEER PASSIVE THREAD FINISHED "+myself);
-				log.info("PEER FINISHED "+myself);
+				tactive.join();
+				this.log.info("PEER FINISHED "+myself);
 			}
 
 		} catch (Exception e) {
-			log.error("ERROR in PeerMAIN. "+e.getMessage());
+			this.log.error("ERROR in PeerMAIN. "+e.getMessage());
 		}
 
 	}
@@ -218,7 +206,9 @@ public class PeerImpl implements Peer {
 		this.cyclon.stopPSS();
 		this.pssthread.stopThread();
 		if(!this.testingviewonly){
-			this.active.setRunning(false);
+			this.active.stop();
+			this.pass.stop();
+			this.log.info("Active and Passive threads stopped.");
 		}
 		this.log.info("Peer Stopped.");
 	}

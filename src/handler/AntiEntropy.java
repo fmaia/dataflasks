@@ -42,8 +42,9 @@ public class AntiEntropy implements Runnable{
 	private int myPort;
 	private long myID;
 	
-	public void setRunning(boolean nb){
-		this.running = nb;
+	public void stop(){
+		this.running = false;
+		this.log.info("Stopping Anti Entropy.");
 	}
 	
 	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,Random r,Logger log){
@@ -56,6 +57,7 @@ public class AntiEntropy implements Runnable{
 		this.myIp = myIp;
 		this.myPort = myPort;
 		this.myID = myID;
+		this.log.info("Anti Entropy initialized.");
 	}
 	 
 	
@@ -82,19 +84,22 @@ public class AntiEntropy implements Runnable{
 			
 				try {
 					Thread.sleep(this.interval);
-					time = time + this.interval;
-					ArrayList<PeerData> myneighbors = view.getSliceLocalView();
-					int localsize = myneighbors.size();
-					if(localsize > 0){
-						PeerData toContact = myneighbors.get(grandom.nextInt(localsize));
-						log.debug(time+" to contact:"+toContact.getID());
+					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
+						time = time + this.interval;
+						log.info("Active thread cycle "+time);
+						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
+						int localsize = myneighbors.size();
+						if(localsize > 0){
+							PeerData toContact = myneighbors.get(grandom.nextInt(localsize));
+							log.debug(time+" to contact:"+toContact.getID());
 
-						//Contact Peer in order to check if there are missing objects
-						HashSet<Long> mykeys = this.store.getKeys();
-						this.sendPeerKeys(toContact,mykeys);
+							//Contact Peer in order to check if there are missing objects
+							HashSet<Long> mykeys = this.store.getKeys();
+							this.sendPeerKeys(toContact,mykeys);
+							log.info("Anti Entropy request sent to "+toContact.getID());
+						}
+
 					}
-					
-					
 				} catch (InterruptedException e) {
 					log.error("ERROR in ACTIVETHREAD!");
 					e.printStackTrace();
