@@ -173,12 +173,6 @@ public class PeerImpl implements Peer {
 	}
 
 	//RUN OUTSIDE SIMULATION ONLY
-	
-	
-	@Override
-	public Long[] getStoredKeys(long now) {
-		return this.store.getStoredKeys();
-	}
 
 	@Override
 	public void snapshot() {
@@ -216,6 +210,12 @@ public class PeerImpl implements Peer {
 	@Override
 	public String getPSSLog() {
 		return this.flasks.getInfo();
+	}
+
+	@Override
+	public Long[] getStoredKeys() {
+		Long[] list = this.store.getStoredKeys();
+		return list;
 	}
 
 	//---------------------------------------------------

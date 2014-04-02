@@ -238,7 +238,7 @@ public class MainSimulation {
 				//System.out.println("Simulation time: "+now);
 				now = now - startuptime;
 				//Logging
-				logKeysetAndPSS(now,false);
+				logKeysetAndPSS(now,true);
 				
 				//Churn
 				if(churn_type.equals("onetime") && !churnonetime_done){
@@ -341,7 +341,7 @@ public class MainSimulation {
 	private static void logKeysetAndPSS(long now, boolean keyset){
 		FileWriter fstream;
 		try {
-			fstream = new FileWriter("logs/keyset/"+(now/1000000000)+".txt");
+			fstream = new FileWriter("logs/groups/"+(now/1000000000)+".txt");
 			BufferedWriter fout = new BufferedWriter(fstream);
 			HashMap<Long,Integer> storedKeys = new HashMap<Long,Integer>();
 			
@@ -364,7 +364,7 @@ public class MainSimulation {
 			
 			if(keyset){
 				for(Peer pi : peers.values()){
-					Long [] tmp = pi.getStoredKeys(now);
+					Long [] tmp = pi.getStoredKeys();
 					for (Long l : tmp){
 						Integer ti = storedKeys.get(l);
 						if(ti==null){
@@ -376,7 +376,7 @@ public class MainSimulation {
 					}
 				}
 				//writing keyset to disk for offline processing
-				fstream = new FileWriter("logs/keyset/"+(now/1000000000)+"STOREDKEYS.txt");
+				fstream = new FileWriter("logs/keyset/"+(now/1000000000)+".txt");
 				fout = new BufferedWriter(fstream);
 				for(Long chave :storedKeys.keySet()){
 					fout.write(chave+" "+storedKeys.get(chave)+"\n");

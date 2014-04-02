@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and limitations 
 */
 package core;
 
+
 import pt.minha.api.sim.Global;
 
 @Global
@@ -29,11 +30,11 @@ public interface Peer {
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart);
-	public Long[] getStoredKeys(long now);
 	public void snapshot();
 	public long getID();
 	public String getIP();
 	public double getPOS();
 	public void stopPeer();
 	public String getPSSLog();
+	public Long[] getStoredKeys();
 }
