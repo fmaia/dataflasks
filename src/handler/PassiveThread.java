@@ -55,7 +55,7 @@ public class PassiveThread implements Runnable {
 		this.smart = smart;
 		this.rnd = rnd;
 		
-		this.exService = Executors.newFixedThreadPool(100);
+		this.exService = Executors.newFixedThreadPool(5);
 		this.log.info("PassiveThread Initialized.");
 		
 		try {
@@ -77,13 +77,14 @@ public class PassiveThread implements Runnable {
 			try {
 				
 				DatagramPacket packet = new DatagramPacket(new byte[10000],10000);
-				log.info("PASSIVE waiting for packet....");
+				log.debug("PASSIVE waiting for packet....");
 				ss.receive(packet);
-				log.debug("PASSIVE packet received....");
-				Message msg = new Message(packet.getData());
-				log.info("MESSAGE RECIEVED of TYPE:"+msg.messagetype);
+				byte[] data = packet.getData();
+				log.debug("PASSIVE packet received with size "+packet.getLength());
+				Message msg = new Message(data);
+				log.info("PassiveThread Message Received of type:"+msg.messagetype);
 				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg));
-				log.info("PASSIVE worker thread launched....");
+				log.debug("PASSIVE worker thread launched....");
 				
 			} catch (SocketException e) {
 				log.info("PassiveThread Server disconnected!");

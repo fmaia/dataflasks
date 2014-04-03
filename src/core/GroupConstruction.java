@@ -64,7 +64,7 @@ public class GroupConstruction {
 		this.store = thestore;
 		this.log = log;
 		this.log.info("GroupConstruction initialized.");
-		this.cycle = 0;
+		this.cycle = 1;
 		this.ip = ip;
 	}
 	
@@ -210,6 +210,7 @@ public class GroupConstruction {
 					tosend.add((PeerData)r.clone());
 				}
 				this.log.debug("Local Group Dissemination Active. Cycle: "+cycle+" TOSENDsize:"+tosend.size());
+				this.log.info("Group Dissemination - sending local view. Cycle: "+cycle);
 				for(PeerData r : tosend){
 					this.log.debug("GroupConstruction - tosend ids: "+r.getID());
 					if(r.getID()!=this.id){

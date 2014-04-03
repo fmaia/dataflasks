@@ -80,13 +80,15 @@ public class AntiEntropy implements Runnable{
 	@Override
 	public void run() {
 		long time = 0;
+		int cycle = 0;
 		while(running){
 			
 				try {
 					Thread.sleep(this.interval);
+					cycle = cycle + 1;
 					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
 						time = time + this.interval;
-						log.info("Active thread cycle "+time);
+						log.info("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
 						int localsize = myneighbors.size();
 						if(localsize > 0){
@@ -96,7 +98,7 @@ public class AntiEntropy implements Runnable{
 							//Contact Peer in order to check if there are missing objects
 							HashSet<Long> mykeys = this.store.getKeys();
 							this.sendPeerKeys(toContact,mykeys);
-							log.info("Anti Entropy request sent to "+toContact.getID());
+							log.debug("Anti Entropy request sent to "+toContact.getID());
 						}
 
 					}

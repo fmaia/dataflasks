@@ -404,7 +404,7 @@ public class MainSimulation {
 			ycsbip = ycsbhost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
-			System.out.println("Scheduling YCSB run at "+runtime+" s");
+			//System.out.println("Scheduling YCSB run at "+runtime+" s");
 			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=65000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");

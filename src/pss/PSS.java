@@ -186,7 +186,7 @@ public class PSS extends Thread implements Serializable{
 					Thread.sleep(this.interval);
 					if(running){ //Treat the case where the peer was stopped but the thread was assleep;
 						time = time + this.interval;
-						this.log.info("TIME: "+time);
+						this.log.info("PSS TIME: "+time);
 						cycles = cycles + 1;
 						this.groupc.setCycle(cycles);
 						synchronized(this){
@@ -204,7 +204,7 @@ public class PSS extends Thread implements Serializable{
 							this.sentPeerData.remove(this.ip);
 							PSSMessage msgglobal = new PSSMessage(toglobal,TYPE.GLOBAL,this.ip);
 							this.sendMsg(target, msgglobal);
-							log.info("CYCLE Message sent to "+target);
+							log.info("PSS message sent to "+target);
 
 						}
 					}
@@ -226,14 +226,14 @@ public class PSS extends Thread implements Serializable{
 		try{
 			if(pmsg.type==TYPE.LOCAL){
 				this.groupc.receiveLocalMessage(pmsg.list);
-				log.debug("Message is Local.");
+				log.info("PSS local message recieved.");
 			}
 			else{
 				this.incorporateToGlobal(pmsg);
 				this.groupc.receiveMessage(pmsg.list);;
-				log.debug("Message is Global.");
+				log.info("PSS global message received.");
 			}
-			log.info("Message processed by PSS.");
+			log.info("PSS message processed.");
 		}
 		catch(Exception e){
 			log.error("processMessage ERROR");
@@ -246,6 +246,7 @@ public class PSS extends Thread implements Serializable{
 		try {
 			DatagramSocket socket = new DatagramSocket();
 			byte[] toSend = psg.encodeMessage();
+			this.log.info("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), this.port);
 			this.log.debug("sending message to "+p.getIp()+":"+this.port);
 			socket.send(packet);	
@@ -346,7 +347,7 @@ public class PSS extends Thread implements Serializable{
 				}
 				PSSMessage msgglobal = new PSSMessage(tosend,TYPE.RESPONSE,this.ip);
 				this.sendMsg(target, msgglobal);
-				log.info("answer sent to "+msg.sender);
+				log.info("PSS answer message sent to "+msg.sender);
 			}
 		}
 	}
@@ -420,12 +421,17 @@ public class PSS extends Thread implements Serializable{
 	}
 	
 	public synchronized ArrayList<PeerData> getSliceLocalView(int slice){
-		ArrayList<PeerData> tmp = this.peersForSlice.get(slice);
-		ArrayList<PeerData> res = new ArrayList<PeerData>();
-		for(PeerData tp : tmp){
-			res.add((PeerData)tp.clone());
+		if(slice==this.groupc.getGroup()){
+			return this.getSliceLocalView();
 		}
-		return res;
+		else{
+			ArrayList<PeerData> tmp = this.peersForSlice.get(slice);
+			ArrayList<PeerData> res = new ArrayList<PeerData>();
+			for(PeerData tp : tmp){
+				res.add((PeerData)tp.clone());
+			}
+			return res;
+		}
 	}
 	
 	public synchronized ArrayList<PeerData> getSliceLocalView(){

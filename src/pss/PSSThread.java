@@ -20,6 +20,8 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
@@ -34,9 +36,12 @@ public class PSSThread extends Thread {
 	private boolean running;
 	private PSS pss;
 	
+	private ExecutorService exService;
+	
 	public PSSThread(PSS pss,String ip,Logger log){
 		this.pss = pss;
 		this.log = log;
+		this.exService = Executors.newFixedThreadPool(5);
 		try {
 			this.ss = new DatagramSocket(Peer.pssport,InetAddress.getByName(ip));
 		} catch (IOException e) {
@@ -46,11 +51,11 @@ public class PSSThread extends Thread {
 	}
 	
 	private class PSSWorker extends Thread{
-		private DatagramPacket p;
+		private byte[] p;
 		private Logger log;
 		private PSS pss;
 		
-		public PSSWorker(DatagramPacket p, PSS pss,Logger log){
+		public PSSWorker(byte[] p, PSS pss,Logger log){
 			this.p = p;
 			this.pss = pss;
 			this.log = log;
@@ -58,7 +63,7 @@ public class PSSThread extends Thread {
 		public void run(){
 			PSSMessage msg;
 			try {
-				msg = new PSSMessage(this.p.getData(),this.log);
+				msg = new PSSMessage(p,this.log);
 				log.debug("message received from "+msg.sender);
 				this.pss.processMessage(msg);
 			} catch (Exception e) {
@@ -80,12 +85,13 @@ public class PSSThread extends Thread {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-				DatagramPacket packet = new DatagramPacket(new byte[5000],5000);
+				DatagramPacket packet = new DatagramPacket(new byte[10000],10000);
 				log.debug("PSSThread waiting for packet....");
 				ss.receive(packet);
+				byte[] data = packet.getData();
+				log.debug("PSSThread packet received with size "+packet.getLength());
 				log.debug("Packet received. Assigning a worker for the job.");
-				Thread work = new PSSWorker(packet,this.pss,this.log);
-				work.start();
+				this.exService.submit(new PSSWorker(data,this.pss,this.log));
 				log.debug("PSS packet received....");
 				
 			} catch (SocketException e) {

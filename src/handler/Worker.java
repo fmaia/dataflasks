@@ -113,19 +113,16 @@ public class Worker implements Runnable {
 		String ip = this.msg.ip;
 		int port = this.msg.port;
 		switch (operation) {
-		case 1: 
-			//SLEAD operation
-			//TODO
-			break;
 		case 2:
 			//PUT operation
+			this.log.info("Received Put Operation in Worker thread. key:value -> "+ this.msg.key + " : "+ this.msg.value );
 			long key = this.msg.key;
 			byte[] value = this.msg.value;
 			//Storing value if it should be stored
 			if(!this.store.haveseen(key)){
 				boolean stored = this.store.put(key, value);
 				if(stored){
-					log.debug("Stored key:"+key);
+					log.info("Stored key:"+key);
 					float achance = this.rnd.nextFloat();
 					ArrayList<PeerData> myview = this.view.getSliceLocalView();
 					if(achance<=this.chance){
@@ -133,50 +130,50 @@ public class Worker implements Runnable {
 						Message replymsg = new Message(11,this.myip,Peer.port,null,null,key,this.myid);
 						this.replyClient(replymsg);
 						//forwarding the request to other peers IN MY SLICE if it is a new obj.
-						this.log.debug("stored and tried to reply to client "+ip+":"+port+" key "+key);
+						this.log.info("stored and tried to reply to client "+ip+":"+port+" key "+key);
 						this.forwardMessage(myview);
 					}
 					else{
-						this.log.debug("STORED BUT CHANCE ("+achance+") DICTATED HOST WONT REPLY key:"+key);
+						this.log.info("STORED BUT CHANCE ("+achance+") DICTATED HOST WONT REPLY key:"+key);
 						this.forwardMessage(myview);
-						this.log.debug("FORWARD AFTER CHANCE DICTATED IT WOULD NOT REPLY. ("+myview.size()+")");
+						this.log.info("FORWARD AFTER CHANCE DICTATED IT WOULD NOT REPLY. ("+myview.size()+")");
 					}
 				}
 				else{
-					this.log.debug("STORED=FALSE smart:"+this.smartforward);
+					this.log.info("STORED=FALSE smart:"+this.smartforward);
 					if(this.smartforward){
-						this.log.debug("entered smart forwarding task");
+						this.log.info("entered smart forwarding task");
 						int objslice = this.store.getSliceForKey(key);
-						this.log.debug("this object target partition:"+objslice);
+						this.log.info("this object target partition:"+objslice);
 						ArrayList<PeerData> lsp = this.view.havePeerFromSlice(objslice);
-						this.log.debug("Entered SMART for partition: "+objslice+ " number of peers:"+lsp.size());
+						this.log.info("Entered SMART for partition: "+objslice+ " number of peers:"+lsp.size());
 						if(lsp.isEmpty()){
 							//forwarding the request to other peers RANDOMLY as I don't have peers of such slice in my list.
 							ArrayList<PeerData> myview = this.view.getView();
-							this.log.debug("NOT STORED HERE Going to forward the PUT request. key:"+key);
+							this.log.info("NOT STORED HERE Going to forward the PUT request. key:"+key);
 							this.forwardMessage(myview);
 						}
 						else{
 							//forwarding the request to peers of the intended slice
-							this.log.debug("NOT STORED HERE Going to forward the PUT request SMART WAY. key:"+key);
+							this.log.info("NOT STORED HERE Going to forward the PUT request SMART WAY. key:"+key);
 							this.forwardMessage(lsp);
 						}
 					}
 					else{
 						//forwarding the request to other peers RANDOMLY if it is a new obj.
 						ArrayList<PeerData> myview = this.view.getView();
-						this.log.debug("NOT STORED HERE Going to forward the PUT request. key:"+key);
+						this.log.info("NOT STORED HERE Going to forward the PUT request. key:"+key);
 						this.forwardMessage(myview);
 					}
 				}
 			}
 			else{
-				this.log.debug("IGNORED PUT OPERATION key:"+key);
+				this.log.info("Worker IGNORED PUT OPERATION for key:"+key);
 			}
 			break;
 		case 3:
 			//GET operation
-			this.log.debug("GET MESSAGE RECEIVED: reqid:"+this.msg.reqid+ " Key:"+this.msg.key);
+			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key);
 			String requestid = this.msg.reqid;
 			long requestedkey = this.msg.key;
 			byte[] temp = null;
@@ -227,7 +224,7 @@ public class Worker implements Runnable {
 			else{
 				//Special internal get for anti-entropy
 				if(requestid.equals("intern")){
-					this.log.info("Received Anti-Entropy reply.");
+					this.log.info("PassiveThread Received Anti-Entropy reply.");
 					temp = this.store.get(requestedkey);
 					if(temp!=null){
 						//Send value to Client
@@ -247,7 +244,7 @@ public class Worker implements Runnable {
 			break;
 		case 4:
 			//Exchange Operation
-			this.log.info("Received Anti-Entropy request!.");
+			this.log.info("PassiveThread Received Anti-Entropy request.");
 			HashSet<Long> mykeys = this.store.getKeys();
 			HashSet<Long> toRequest = new HashSet<Long>();
 			for(Long l : msg.keys){
