@@ -70,8 +70,12 @@ public class PeerImpl implements Peer {
 	private float replychance;
 	private boolean smart;
 	
-	//RUN OUTSIDE SIMULATION ONLY
+	//aux
+	private String myself;
 	
+	public PeerImpl(){
+		
+	}
 	
 	@Override
 	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
@@ -96,7 +100,47 @@ public class PeerImpl implements Peer {
 		this.activeinterval = activeinterval;
 		this.replychance = replychance;
 		this.smart = smart;
+		this.myself = new Long(id).toString();
 		
+		return this;
+	}
+	
+	@Override
+	public Peer initPeerWithData(String ip,long id,double position,boolean loadfromfile,String bootip, 
+			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
+				int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
+				boolean testingviewonly,long activeinterval,float replychance,boolean smart,String[] storedata,String[] groupdata,String[] pssdata) {
+		
+		this.ip = ip;
+		this.id = id;
+		this.position = position;
+		this.loadfromfile = loadfromfile;
+		this.bootip = bootip;
+		this.repmax = repmax;
+		this.repmin = repmin;
+		this.maxage = maxage;
+		this.localmessage = localmessage;
+		this.localinterval = localinterval;
+		this.pssSleepInterval = psssleepinterval;
+		this.pssboottime = pssboottime;
+		this.pssviewsize = pssviewsize;
+		this.loglevel = loglevel;
+		this.testingviewonly = testingviewonly;
+		this.activeinterval = activeinterval;
+		this.replychance = replychance;
+		this.smart = smart;
+		this.myself = new Long(id).toString();
+		
+		this.store = new KVStore();
+		this.store.readFromString(storedata);
+		this.flasks = new GroupConstruction(this.store);
+		this.flasks.readFromString(groupdata);
+		if (loglevel.equals("debug")) System.out.println("Store and Flasks loaded."+ this.flasks.getInfo());
+		this.cyclon = new PSS(this.ip,this.id,this.pssSleepInterval,this.pssboottime,
+				this.pssviewsize,this.flasks);
+		if (loglevel.equals("debug")) System.out.println("Cyclon init. Going to load...");
+		this.cyclon.readFromStringList(pssdata);
+		System.out.println("Peer loaded from file.");
 		
 		return this;
 	}
@@ -105,8 +149,7 @@ public class PeerImpl implements Peer {
 	public void main(String[] args) {
 
 		try{
-			//SET LOG
-			String myself = new Long(id).toString();
+			//SET LOG 
 			this.log = Logger.getLogger(myself);
 			if(this.loglevel.equals("debug")){
 				this.log.setLevel(Level.DEBUG);
@@ -128,16 +171,21 @@ public class PeerImpl implements Peer {
 			}
 			capp.setName(myself);
 			this.log.addAppender(capp);
-
+			
 			this.log.info("Initialized "+myself);
-
+			
 			//START STORE + PSS + GROUP CONSTRUCTION
-			this.store = new KVStore(log);
 			if(this.loadfromfile){
-				this.log.info("Loading data from file... - NOT IMPLEMENTED!");
+				//When data il loaded from file logs need to be propagated
+				//Logs cannot be initialized when the peer is initiated outside simulation.
+				this.store.log = this.log;
+				this.flasks.log = this.log;
+				this.cyclon.log = this.log;
 			}
 			else{
 				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
+				this.store = new KVStore(this.log);
+				this.log.info("Initializing PSS and Group Construction from scratch.");
 				this.flasks = new GroupConstruction(this.ip,this.id,this.position,
 						this.repmin,this.repmax,this.maxage,this.localmessage,
 						this.localinterval,this.store,this.log);
@@ -172,13 +220,8 @@ public class PeerImpl implements Peer {
 
 	}
 
+
 	//RUN OUTSIDE SIMULATION ONLY
-
-	@Override
-	public void snapshot() {
-		// TODO Auto-generated method stub
-
-	}
 
 	@Override
 	public long getID() {
@@ -217,6 +260,22 @@ public class PeerImpl implements Peer {
 		Long[] list = this.store.getStoredKeys();
 		return list;
 	}
+
+	@Override
+	public String getStoreSnap() {
+		return this.store.toString();
+	}
+
+	@Override
+	public String getPSSSnap() {
+		return this.cyclon.toString();
+	}
+
+	@Override
+	public String getGroupConstructionSnap() {
+		return this.flasks.toString();
+	}
+
 
 	//---------------------------------------------------
 	

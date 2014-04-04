@@ -45,9 +45,59 @@ public class GroupConstruction {
 	private boolean local;
 	private int localinterval;
 	private KVStore store;
-	private Logger log;
+	public Logger log;
 	
 	private int cycle;
+	
+	
+	public GroupConstruction(KVStore thestore,Logger log){
+		this.log = log;
+		this.store = thestore;
+		this.log.info("Group Construction initialized empty.");
+	}
+	
+	public GroupConstruction(KVStore thestore){
+		this.store = thestore;
+	}
+	
+	//USE OUTSIDE SIMULATION------------------------------------------------------------
+	
+	
+	@Override
+	public String toString(){
+		String res = this.ngroups + "\n" + this.group + "\n";
+		res = res + this.ip + "\n" + this.id + "\n" + this.position + "\n";
+		res = res + this.replicationfactorMin + "\n" + this.replicationfactorMax +"\n";
+		res = res + this.maxage + "\n" + this.local + "\n" + this.localinterval + "\n";
+		res = res + this.localview.size() + "\n";
+		for (PeerData p : this.localview){
+			res = res + p.toString() + "\n";
+		}
+		return res;
+	}
+	
+	public void readFromString(String[] s){
+		String[] lines = s;
+		this.ngroups = Integer.parseInt(lines[0]);
+		this.group = Integer.parseInt(lines[1]);
+		this.ip = lines[2];
+		this.id = Long.parseLong(lines[3]);
+		this.position = Double.parseDouble(lines[4]);
+		this.replicationfactorMin = Integer.parseInt(lines[5]);
+		this.replicationfactorMax = Integer.parseInt(lines[6]);
+		this.maxage = Integer.parseInt(lines[7]);
+		this.local = Boolean.parseBoolean(lines[8]);
+		this.localinterval = Integer.parseInt(lines[9]);
+		int sizel = Integer.parseInt(lines[10]);
+		this.localview = new ArrayList<PeerData>();
+		for(int i=11;i<sizel+11;i++){
+			PeerData p = new PeerData(lines[i]);
+			this.localview.add(p);
+		}
+	}
+	
+	
+	//----------------------------------------------------------------------------------
 	
 	public GroupConstruction(String ip,long id,double position, int replicationfactorMin,
 			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, Logger log){
@@ -67,6 +117,9 @@ public class GroupConstruction {
 		this.cycle = 1;
 		this.ip = ip;
 	}
+	
+	
+	
 	
 	//Use outside simulation
 	public String getInfo(){

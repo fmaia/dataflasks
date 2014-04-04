@@ -123,8 +123,8 @@ public class StratusClient extends DB {
 				String ip = plist[i];
 				//int port = Integer.parseInt(plist[i+1]);
 				Long pid = Long.parseLong(plist[i+2]);
-				
-				PeerData tmp = new PeerData(ip,0,0,0,0,pid);
+				double position = Double.parseDouble(plist[i+3]);
+				PeerData tmp = new PeerData(ip,0,0,0,position,pid);
 				peers.add(tmp);
 				//log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
 			}

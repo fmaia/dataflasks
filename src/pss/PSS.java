@@ -18,9 +18,6 @@ package pss;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -40,17 +37,13 @@ import core.GroupConstruction;
 import core.Peer;
 
 
-public class PSS extends Thread implements Serializable{
+public class PSS extends Thread{
 	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	private HashMap<String,PeerData> myview;
 	private HashMap<Integer,ArrayList<PeerData>> peersForSlice;
 	private ArrayList<PeerData> sentPeerData;
 	
-	private Logger log;
+	public Logger log;
 	private Random grandom;
 	private String ip;
 	private int port;
@@ -131,36 +124,59 @@ public class PSS extends Thread implements Serializable{
 		
 	}
 
-
-	public void writeObject(ObjectOutputStream s){
-		try {
-			s.writeObject(this.myview);
-			s.writeObject(this.peersForSlice);
-			s.writeObject(this.sentPeerData);
-		} catch (IOException e) {
-			log.error("Error serializing object Store.");
-			e.printStackTrace();
-		}
+	public PSS(String ip,long id,long sleep,long boottime, int viewsize, GroupConstruction groupC){
+		this.groupc = groupC;
+		
+		this.grandom = new Random();
+		this.ip = ip;
+		this.running = true;
+		this.id = id;
+	
+		//LOADING CONFIG
+		this.port = Peer.pssport;
+		this.interval= sleep;
+		this.boottime= boottime;
+		this.viewsize = viewsize;
+		this.gossipsize = viewsize;
+		
+		this.peersForSlice = new HashMap<Integer,ArrayList<PeerData>>();
 	}
 	
-	
-	@SuppressWarnings("unchecked")
-	public void readObject(ObjectInputStream s){
-		try {
-			this.myview = (HashMap<String,PeerData>)s.readObject();
-			this.peersForSlice =(HashMap<Integer,ArrayList<PeerData>>) s.readObject();
-			this.sentPeerData = (ArrayList<PeerData>)s.readObject();
-		} catch (IOException e) {
-			log.error("Error reading object Store from file.");
-			e.printStackTrace();
-		} catch (ClassNotFoundException e) {
-			log.error("Error reading object Store from file.");
-			e.printStackTrace();
+	public void readFromStringList(String[] lines){
+		int svs = Integer.parseInt(lines[0]);
+		this.myview = new HashMap<String,PeerData>();
+		int i = 1;
+		for(int j=0;j<svs;j++){
+			String key = lines[i];
+			PeerData v = new PeerData(lines[i+1]);
+			this.myview.put(key,v);
+			i = i + 2;
+		}
+		int sentsvs = Integer.parseInt(lines[i]);
+		this.sentPeerData = new ArrayList<PeerData>();
+		i = i +1;
+		for(int j=0;j<sentsvs;j++){
+			this.sentPeerData.add(new PeerData(lines[i]));
+			i = i + 1;
 		}
 	}
-	
 	
 	//USE outside SIMULATION ONLY
+	
+	@Override
+	public String toString(){
+		String res = this.myview.size() + "\n";
+		for(String ps : this.myview.keySet()){
+			res = res + ps + "\n" + this.myview.get(ps).toString() + "\n";
+		}
+		//Peers For slice is not being written.
+		res = res + this.sentPeerData.size() + "\n";
+		for(PeerData pd : this.sentPeerData){
+			res = res + pd.toString() + "\n";
+		}
+		return res;
+	}
+
 	
 	public void stopPSS(){
 		this.running = false;
@@ -246,7 +262,7 @@ public class PSS extends Thread implements Serializable{
 		try {
 			DatagramSocket socket = new DatagramSocket();
 			byte[] toSend = psg.encodeMessage();
-			this.log.info("pss message size = "+toSend.length);
+			this.log.debug("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), this.port);
 			this.log.debug("sending message to "+p.getIp()+":"+this.port);
 			socket.send(packet);	

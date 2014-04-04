@@ -2,7 +2,9 @@
 
 rm -rf logs peerlist.properties
 rm -rf 10.0.0*
-mkdir logs logs/keyset logs/groups
+mkdir logs logs/keyset logs/groups dataout datain
+rm -rf datain/*.txt
+cp dataout/*.txt datain/
 
 mycommand="java -Dorg.slf4j.simpleLogger.defaultLogLevel=warn -Xmx10G -jar build/stratus.jar "
 echo $mycommand

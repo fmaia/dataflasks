@@ -15,17 +15,9 @@ See the License for the specific language governing permissions and limitations 
 */
 package common;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 
-public class PeerData implements Serializable{
+public class PeerData{
 	
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	private String ip;
 	private int nslices;
 	private int age;
@@ -43,36 +35,22 @@ public class PeerData implements Serializable{
 		this.myID = myID;
 	}
 	
-	public PeerData(){
-		
+	public PeerData(String s){
+		String[] values = s.split(" ");
+		this.ip = values[0];
+		this.nslices = Integer.parseInt(values[1]);
+		this.age = Integer.parseInt(values[2]);
+		this.slice = Integer.parseInt(values[3]);
+		this.pos = Double.parseDouble(values[4]);
+		this.myID = Long.parseLong(values[5]);
 	}
 	
 
-	public void writeObject(ObjectOutputStream s){
-		try {
-			s.writeObject(ip);
-			s.writeInt(nslices);
-			s.writeInt(age);
-			s.writeInt(slice);
-			s.writeDouble(pos);
-			s.writeLong(myID);
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-	
-	
-	public void readObject(ObjectInputStream s){
-		try {
-			this.ip = (String) s.readObject();
-			this.nslices = s.readInt();
-			this.age = s.readInt();
-			this.slice = s.readInt();
-			this.pos = s.readDouble();
-			this.myID = s.readLong();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+	@Override
+	public String toString(){
+		String res = this.ip + " " + this.nslices+ " "+ this.age+" "+this.slice;
+		res = res + " " + this.pos + " " +this.myID;
+		return res;
 	}
 	
 	public double getPos() {
@@ -158,8 +136,5 @@ public class PeerData implements Serializable{
 		return tmp;
 	}
 	
-	@Override
-	public String toString(){
-		return new Long(this.myID).toString();
-	}
+
 }

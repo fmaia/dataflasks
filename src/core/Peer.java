@@ -16,7 +16,9 @@ See the License for the specific language governing permissions and limitations 
 package core;
 
 
+
 import pt.minha.api.sim.Global;
+
 
 @Global
 public interface Peer {
@@ -24,17 +26,25 @@ public interface Peer {
 	public static int port = 6001;
 	public static int pssport = 6002;
 	public static int bootport = 6003;
+
 	
 	public void main(String[] args);
 	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart);
-	public void snapshot();
+	public Peer initPeerWithData(String ip,long id,double position,boolean loadfromfile,String bootip, 
+			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
+			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
+			boolean testingviewonly,long activeinterval,float replychance,boolean smart,
+				String[] storedata,String[] groupdata,String[] pssdata);
 	public long getID();
 	public String getIP();
 	public double getPOS();
 	public void stopPeer();
 	public String getPSSLog();
 	public Long[] getStoredKeys();
+	public String getStoreSnap();
+	public String getPSSSnap();
+	public String getGroupConstructionSnap();
 }
