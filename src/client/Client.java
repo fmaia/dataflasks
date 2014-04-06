@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.Set;
 
 import loadbalancing.LoadBalancer;
@@ -41,6 +42,8 @@ public class Client implements PLAPI {
 	private ClientReplyHandler handler;
 	private String myid;
 	
+	private DatagramSocket sendersocket;
+	
 	public Client(String id,LoadBalancer lb,String ip,int port,int nputreps,Logger log){
 		this.log = log;
 		this.myip = ip;
@@ -48,23 +51,28 @@ public class Client implements PLAPI {
 		this.lb = lb;
 		this.requestcount = 0L;
 		this.myid = id; 
+		try {
+			this.sendersocket = new DatagramSocket(Peer.outclientport);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		this.handler = new ClientReplyHandler(ip, port,nputreps,log);
 		new Thread(handler).start();
 		log.info("Client STARTED. IP:"+myip+" PORT:"+myport);
 	}
 	
 	public synchronized void stop(){
+		this.sendersocket.close();
 		this.handler.stop();
 	}
 	
-	private int sendput(PeerData p, Long key, byte[] value){
+	private synchronized int sendput(PeerData p, Long key, byte[] value){
 
-		try {
-			DatagramSocket socket = new DatagramSocket();
+		try { 
 			byte[] toSend = Message.encodeMessagePut(this.myip,this.myport,key,value,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			socket.send(packet);		
-			socket.close();
+			this.sendersocket.send(packet);		
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendput Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
@@ -74,13 +82,11 @@ public class Client implements PLAPI {
 	} 
 	
 	
-	private int sendget(PeerData p, Long key, String requestid){
+	private synchronized int sendget(PeerData p, Long key, String requestid){
 		try {
-			DatagramSocket socket = new DatagramSocket();
 			byte[] toSend = Message.encodeMessageGet(this.myip,this.myport,key,requestid,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			socket.send(packet);		
-			socket.close();
+			this.sendersocket.send(packet);		
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
@@ -89,18 +95,6 @@ public class Client implements PLAPI {
 		return 1;
 	} 
 	
-	public synchronized void snapshot(PeerData p){
-		try {
-			DatagramSocket socket = new DatagramSocket();
-			byte[] toSend = new Message(4,this.myip,this.myport,Long.parseLong(myid)).encodeMessage();
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()),Peer.port);
-			socket.send(packet);		
-			this.log.debug("SNAPSHOT REQUEST SENT TO "+p.getID());
-			socket.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
 	
 	public synchronized Long getRequestcount() {
 		this.requestcount = this.requestcount+1;

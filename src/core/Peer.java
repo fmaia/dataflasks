@@ -30,6 +30,7 @@ public interface Peer {
 	public static int outport = 7001;
 	public static int outantientropyport = 7003;
 	public static int outgroupport = 7004;
+	public static int outclientport = 7005;
 
 	
 	public void main(String[] args);
