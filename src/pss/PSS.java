@@ -22,6 +22,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -56,6 +57,8 @@ public class PSS extends Thread{
 	private long boottime;
 	private boolean running;
 	
+	private DatagramSocket sendersocket;
+	
 	private GroupConstruction groupc;
 	
 	
@@ -63,6 +66,13 @@ public class PSS extends Thread{
 	
 	
 		this.groupc = groupC;
+		
+		try {
+			this.sendersocket = new DatagramSocket(Peer.outpssport);
+		} catch (SocketException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		
 		this.grandom = new Random();
 		this.log = log;
@@ -125,7 +135,15 @@ public class PSS extends Thread{
 	}
 
 	public PSS(String ip,long id,long sleep,long boottime, int viewsize, GroupConstruction groupC){
+		
 		this.groupc = groupC;
+		
+		try {
+			this.sendersocket = new DatagramSocket(Peer.outpssport);
+		} catch (SocketException e2) {
+			// TODO Auto-generated catch block
+			e2.printStackTrace();
+		}
 		
 		this.grandom = new Random();
 		this.ip = ip;
@@ -179,6 +197,8 @@ public class PSS extends Thread{
 
 	
 	public void stopPSS(){
+		this.groupc.stop();
+		this.sendersocket.close();
 		this.running = false;
 		this.log.info("PSS stopped.");
 	}
@@ -260,14 +280,13 @@ public class PSS extends Thread{
 
 	private synchronized int sendMsg(PeerData p, PSSMessage psg){
 		try {
-			DatagramSocket socket = new DatagramSocket();
+			
 			byte[] toSend = psg.encodeMessage();
 			this.log.debug("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), this.port);
 			this.log.debug("sending message to "+p.getIp()+":"+this.port);
-			socket.send(packet);	
+			sendersocket.send(packet);	
 			this.log.debug("message sent to "+p.getIp()+":"+this.port+" Message:"+ packet.toString());
-			socket.close();
 			return 0;
 		} catch (IOException e) {
 			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+this.port);

@@ -26,6 +26,10 @@ public interface Peer {
 	public static int port = 6001;
 	public static int pssport = 6002;
 	public static int bootport = 6003;
+	public static int outpssport = 7002;
+	public static int outport = 7001;
+	public static int outantientropyport = 7003;
+	public static int outgroupport = 7004;
 
 	
 	public void main(String[] args);

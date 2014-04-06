@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
@@ -47,17 +48,19 @@ public class GroupConstruction {
 	private KVStore store;
 	public Logger log;
 	
+	private DatagramSocket sendersocket;
+	
 	private int cycle;
 	
 	
-	public GroupConstruction(KVStore thestore,Logger log){
-		this.log = log;
-		this.store = thestore;
-		this.log.info("Group Construction initialized empty.");
-	}
-	
 	public GroupConstruction(KVStore thestore){
 		this.store = thestore;
+		try {
+			this.sendersocket = new DatagramSocket(Peer.outgroupport);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	//USE OUTSIDE SIMULATION------------------------------------------------------------
@@ -116,10 +119,18 @@ public class GroupConstruction {
 		this.log.info("GroupConstruction initialized.");
 		this.cycle = 1;
 		this.ip = ip;
+		try {
+			this.sendersocket = new DatagramSocket(Peer.outgroupport);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	
-	
+	public void stop(){
+		this.sendersocket.close();
+	}
 	
 	//Use outside simulation
 	public String getInfo(){
@@ -282,13 +293,12 @@ public class GroupConstruction {
 	private synchronized int sendMsg(PeerData p, PSSMessage psg){
 		try {
 			this.log.debug("GroupConstruction - going to send message to "+p.getIp()+":"+Peer.pssport);
-			DatagramSocket socket = new DatagramSocket();
+			
 			byte[] toSend = psg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.pssport);
 			this.log.debug("GroupConstruction - sending message to "+p.getIp()+":"+Peer.pssport);
-			socket.send(packet);	
+			this.sendersocket.send(packet);	
 			this.log.debug("GroupConstruction - message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
-			socket.close();
 			return 0;
 		} catch (IOException e) {
 			this.log.error("ERROR sendget in GROUPCONSTRUCTION. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.pssport);

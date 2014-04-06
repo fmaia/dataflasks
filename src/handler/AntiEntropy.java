@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
@@ -41,8 +42,10 @@ public class AntiEntropy implements Runnable{
 	private String myIp;
 	private int myPort;
 	private long myID;
+	private DatagramSocket socketsender;
 	
 	public void stop(){
+		this.socketsender.close();
 		this.running = false;
 		this.log.info("Stopping Anti Entropy.");
 	}
@@ -57,6 +60,12 @@ public class AntiEntropy implements Runnable{
 		this.myIp = myIp;
 		this.myPort = myPort;
 		this.myID = myID;
+		try {
+			this.socketsender = new DatagramSocket(Peer.outantientropyport);
+		} catch (SocketException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		this.log.info("Anti Entropy initialized.");
 	}
 	 
@@ -65,11 +74,9 @@ public class AntiEntropy implements Runnable{
 	
 	private void sendPeerKeys(PeerData p,HashSet<Long> mykeys){
 		try{
-			DatagramSocket socket = new DatagramSocket();
 			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys).encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(myIp), myPort);
-			socket.send(packet);		
-			socket.close();
+			this.socketsender.send(packet);		
 		} catch (IOException e) {
 			this.log.debug("ERROR sendPeerKeys in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
 			//e.printStackTrace();
