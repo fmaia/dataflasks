@@ -44,7 +44,7 @@ public class Client implements PLAPI {
 	
 	private DatagramSocket sendersocket;
 	
-	public Client(String id,LoadBalancer lb,String ip,int port,int nputreps,Logger log){
+	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,Logger log){
 		this.log = log;
 		this.myip = ip;
 		this.myport = port;
@@ -52,7 +52,7 @@ public class Client implements PLAPI {
 		this.requestcount = 0L;
 		this.myid = id; 
 		try {
-			this.sendersocket = new DatagramSocket(Peer.outclientport);
+			this.sendersocket = new DatagramSocket(senderport);
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

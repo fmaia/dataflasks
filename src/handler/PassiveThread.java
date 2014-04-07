@@ -43,6 +43,7 @@ public class PassiveThread implements Runnable {
 	private Random rnd;
 	
 	private ExecutorService exService;
+	private SenderSocketHandler sockethandler;
 	
 	public PassiveThread(Long id,KVStore store, PSS view,String ip,int port,float chance, boolean smart, Random rnd,Logger log){
 		this.running = true;
@@ -56,6 +57,7 @@ public class PassiveThread implements Runnable {
 		this.rnd = rnd;
 		
 		this.exService = Executors.newFixedThreadPool(5);
+		this.sockethandler = new SenderSocketHandler(5);
 		this.log.info("PassiveThread Initialized.");
 		
 		try {
@@ -83,7 +85,7 @@ public class PassiveThread implements Runnable {
 				log.debug("PASSIVE packet received with size "+packet.getLength());
 				Message msg = new Message(data);
 				log.info("PassiveThread Message Received of type:"+msg.messagetype);
-				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg));
+				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg,this.sockethandler));
 				log.debug("PASSIVE worker thread launched....");
 				
 			} catch (SocketException e) {

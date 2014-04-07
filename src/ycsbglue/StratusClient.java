@@ -32,7 +32,6 @@ import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.PatternLayout;
 
-
 import client.Client;
 
 import com.yahoo.ycsb.ByteArrayByteIterator;
@@ -41,6 +40,8 @@ import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 
 import common.PeerData;
+import core.Peer;
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -51,6 +52,7 @@ import loadbalancing.LoadBalancer;
 public class StratusClient extends DB {
 	
 	public static int lastport = 0;
+	public static int lastsenderport = 0;
 	
 	private LoadBalancer lb;
 	private Client client;
@@ -72,6 +74,15 @@ public class StratusClient extends DB {
 		}
 	}
 
+	public static int getNewSenderPort(int p){
+		synchronized(StratusClient.class){
+			if(lastsenderport==0){
+				lastsenderport=p;
+			}
+			lastsenderport++;
+			return lastsenderport;
+		}
+	}
 	
 	public StratusClient(){
 			
@@ -141,7 +152,8 @@ public class StratusClient extends DB {
 		//For now the number of replies needed is one and it is hardcoded
 		int nputreplies = 1;
 		//The Client will always have the id 0 - req id is distinguished by PORT
-		client = new Client(new Long(0).toString(),lb,myIp,myPort,nputreplies,log);
+		int senderport = getNewSenderPort(Peer.outclientport);
+		client = new Client(new Long(0).toString(),lb,myIp,myPort,senderport,nputreplies,log);
 		log.debug("StratusClient started.");
 	}
 	

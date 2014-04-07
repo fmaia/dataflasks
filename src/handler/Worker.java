@@ -43,8 +43,10 @@ public class Worker implements Runnable {
 	private boolean smartforward;
 	private Message msg;
 	private String myip;
+	private SenderSocketHandler sockethandler;
 	
-	public Worker(String ip,Long id,KVStore store, PSS view, float chance,boolean smart,Logger log, Random rnd, Message msg){
+	public Worker(String ip,Long id,KVStore store, PSS view, float chance,
+			boolean smart,Logger log, Random rnd, Message msg, SenderSocketHandler sockethandler){
 		this.log = log;
 		this.store = store;
 		this.view = view;
@@ -54,6 +56,7 @@ public class Worker implements Runnable {
 		this.smartforward = smart;
 		this.msg = msg;
 		this.myip = ip;
+		this.sockethandler = sockethandler;
 	}
 	
 	private void forwardMessage(ArrayList<PeerData> myview){
@@ -63,12 +66,12 @@ public class Worker implements Runnable {
 			try {
 				//Connecting to host
 				this.log.debug("TRYING TO FORWARD MSG TO "+p.getID()+" KEY:"+this.msg.key+" MSGTYPE:"+this.msg.messagetype);			
-				DatagramSocket socket = new DatagramSocket();
+				DatagramSocket socket = this.sockethandler.getSocket();
 				byte[] toSend = this.msg.encodeMessage();
 				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 				socket.send(packet);		
 				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY:"+this.msg.key+ " REQID"+this.msg.reqid+ " reqISSUER:"+this.msg.id);
-				socket.close();
+				this.sockethandler.returnSocket(socket);
 				
 			} catch (IOException e) {
 				//log.error("Time:"+(System.nanoTime()-start));
@@ -81,11 +84,11 @@ public class Worker implements Runnable {
 	
 	private void replyClient(Message replymsg){
 		try {
-			DatagramSocket socket = new DatagramSocket();
+			DatagramSocket socket = this.sockethandler.getSocket();
 			byte[] toSend = replymsg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.msg.ip), this.msg.port);
 			socket.send(packet);	
-			socket.close();
+			this.sockethandler.returnSocket(socket);
 		} catch (IOException e) {
 			log.error("Worker - replyClient - IOException!" + e.getMessage());
 		}
@@ -94,11 +97,11 @@ public class Worker implements Runnable {
 	
 	private int sendget(PeerData p, Long key, String ip, int port){
 		try {
-			DatagramSocket socket = new DatagramSocket();
+			DatagramSocket socket = this.sockethandler.getSocket();
 			byte[] toSend = Message.encodeMessageGet(ip,port,key,"intern",this.myid);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			socket.send(packet);		
-			socket.close();
+			this.sockethandler.returnSocket(socket);
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);

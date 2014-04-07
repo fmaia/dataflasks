@@ -484,7 +484,7 @@ public class MainSimulation {
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB run at "+runtime+" s");
 			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
-					"stratus.port=11000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
+					"stratus.port=8000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
 			
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
@@ -528,7 +528,7 @@ public class MainSimulation {
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB load at "+initload+" s");
 			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","10","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
-					"stratus.port=10000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
+					"stratus.port=9000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
 			
 			
 		} catch (IllegalArgumentException e) {
