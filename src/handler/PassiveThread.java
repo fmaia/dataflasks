@@ -56,8 +56,8 @@ public class PassiveThread implements Runnable {
 		this.smart = smart;
 		this.rnd = rnd;
 		
-		this.exService = Executors.newFixedThreadPool(3);
-		this.sockethandler = new SenderSocketHandler(3);
+		this.exService = Executors.newFixedThreadPool(5);
+		this.sockethandler = new SenderSocketHandler(5);
 		this.log.info("PassiveThread Initialized.");
 		
 		try {
