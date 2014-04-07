@@ -103,8 +103,19 @@ public class KVStore {
 	}
 	
 	public int getSliceForKey(long key){
-		int res = (int) Math.abs(key%this.nslices);
-		if(res==0) res = 1;
+		long min = Long.MIN_VALUE;
+		long max = Long.MAX_VALUE;
+		long step = max/(this.nslices/2);
+		long current = min;
+		int res = 1;
+		while(key>current){
+			current = current + step;
+			res = res + 1;
+		}
+		//Correct possible error because how min and max count the 0 value
+		if(res>this.nslices){
+			res = this.nslices;
+		}
 		return res;
 	}
 	

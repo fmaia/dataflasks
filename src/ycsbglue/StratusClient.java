@@ -91,7 +91,7 @@ public class StratusClient extends DB {
 	public void init() throws DBException{
 		
 		
-		System.out.println("Initializing StratusClient...");
+		
 		Properties ycsbProps = getProperties();
 		
 		String myIp = ycsbProps.getProperty("stratus.ip");
@@ -153,6 +153,7 @@ public class StratusClient extends DB {
 		int nputreplies = 1;
 		//The Client will always have the id 0 - req id is distinguished by PORT
 		int senderport = getNewSenderPort(Peer.outclientport);
+		System.out.println("Initializing StratusClient. Port:"+myPort+" senderPort:"+senderport);
 		client = new Client(new Long(0).toString(),lb,myIp,myPort,senderport,nputreplies,log);
 		log.debug("StratusClient started.");
 	}
