@@ -80,7 +80,7 @@ public class BootstrapperImpl implements Bootstrapper {
 	
 	public void removeIP(String ip){
 		this.aliveIPs.remove(ip);
-		this.aliveIPs.remove(ip);
+		this.aliveIds.remove(ip);
 		this.alivePos.remove(ip);
 	}
 	//-----------------

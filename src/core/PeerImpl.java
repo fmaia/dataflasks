@@ -140,7 +140,7 @@ public class PeerImpl implements Peer {
 				this.pssviewsize,this.flasks);
 		if (loglevel.equals("debug")) System.out.println("Cyclon init. Going to load...");
 		this.cyclon.readFromStringList(pssdata);
-		System.out.println("Peer loaded from file.");
+		System.out.println("Peer "+this.id+" loaded from file.");
 		
 		return this;
 	}
@@ -176,11 +176,14 @@ public class PeerImpl implements Peer {
 			
 			//START STORE + PSS + GROUP CONSTRUCTION
 			if(this.loadfromfile){
-				//When data il loaded from file logs need to be propagated
+				//When data is loaded from file logs need to be propagated
 				//Logs cannot be initialized when the peer is initiated outside simulation.
 				this.store.log = this.log;
 				this.flasks.log = this.log;
 				this.cyclon.log = this.log;
+				this.pssthread = new PSSThread(cyclon,this.ip,this.log);
+				pssthread.start();
+				cyclon.start();
 			}
 			else{
 				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
@@ -191,7 +194,7 @@ public class PeerImpl implements Peer {
 						this.localinterval,this.store,this.log);
 				this.cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
 						this.pssboottime,this.pssviewsize,this.log,this.flasks);
-				this.pssthread = new PSSThread(cyclon,this.ip,this.log);
+				
 				pssthread.start();
 				cyclon.start();
 			}
@@ -240,6 +243,7 @@ public class PeerImpl implements Peer {
 
 	@Override
 	public void stopPeer() {
+		//System.out.println("Removing "+this.id);
 		this.cyclon.stopPSS();
 		this.pssthread.stopThread();
 		if(!this.testingviewonly){

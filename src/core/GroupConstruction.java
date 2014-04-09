@@ -129,7 +129,7 @@ public class GroupConstruction {
 	
 	
 	public void stop(){
-		this.sendersocket.close();
+		//this.sendersocket.close();
 	}
 	
 	//Use outside simulation

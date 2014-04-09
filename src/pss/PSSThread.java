@@ -31,7 +31,7 @@ import core.Peer;
 
 public class PSSThread extends Thread {
 	
-	private Logger log;
+	public Logger log;
 	private DatagramSocket ss;
 	private boolean running;
 	private PSS pss;
@@ -75,7 +75,7 @@ public class PSSThread extends Thread {
 	//Used outside simulation!!!
 	public void stopThread(){
 		this.running = false;
-		this.ss.close();
+		//this.ss.close();
 		this.log.info("PSSThread stopped.");
 	}
 	//-----------------

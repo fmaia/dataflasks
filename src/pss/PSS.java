@@ -198,7 +198,7 @@ public class PSS extends Thread{
 	
 	public void stopPSS(){
 		this.groupc.stop();
-		this.sendersocket.close();
+		//this.sendersocket.close();
 		this.running = false;
 		this.log.info("PSS stopped.");
 	}

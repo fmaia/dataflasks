@@ -68,7 +68,7 @@ public class PassiveThread implements Runnable {
 	}
 
 	public void stop(){
-		this.ss.close();
+		//this.ss.close();
 		this.running = false;
 	}
 	
@@ -78,7 +78,7 @@ public class PassiveThread implements Runnable {
 		while (running) {
 			try {
 				
-				DatagramPacket packet = new DatagramPacket(new byte[10000],10000);
+				DatagramPacket packet = new DatagramPacket(new byte[1000000],1000000);
 				log.debug("PASSIVE waiting for packet....");
 				ss.receive(packet);
 				byte[] data = packet.getData();

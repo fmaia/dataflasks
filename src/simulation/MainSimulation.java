@@ -387,7 +387,7 @@ public class MainSimulation {
 		String ip = newhost.getAddress().getCanonicalHostName();
 		
 		Entry<Peer> newpeer = newproc.createEntry(core.Peer.class,core.PeerImpl.class.getName());
-		Peer newpeerref = newpeer.call().initPeer(ip, id, position,loadfromfile,firstip,psssleepinterval,
+		Peer newpeerref = newpeer.call().initPeer(ip, id, position,false,firstip,psssleepinterval,
 				0,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 				testingviewonly,activeinterval,replychance,smart);
 		

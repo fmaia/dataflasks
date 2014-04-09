@@ -45,7 +45,7 @@ public class AntiEntropy implements Runnable{
 	private DatagramSocket socketsender;
 	
 	public void stop(){
-		this.socketsender.close();
+		//this.socketsender.close();
 		this.running = false;
 		this.log.info("Stopping Anti Entropy.");
 	}
