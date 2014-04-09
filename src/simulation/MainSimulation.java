@@ -318,10 +318,12 @@ public class MainSimulation {
 								System.out.println("Constant churn cycle "+constantchurncycle);
 								constantchurncycle = constantchurncycle +1;
 								for(int j=0;j<nchurn;j++){
-									removePeer();
-									addPeer(rnd);
+									removePeer();									
 								}
-
+								for(int j=0;j<nchurn;j++){
+									addPeer(rnd);									
+								}
+								
 							}
 							constantcyclecount = constantcyclecount + 1;
 						}
