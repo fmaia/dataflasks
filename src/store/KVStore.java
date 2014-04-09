@@ -107,7 +107,7 @@ public class KVStore {
 		long max = Long.MAX_VALUE;
 		long step = max/(this.nslices/2);
 		long current = min;
-		int res = 1;
+		int res = 0;
 		while(key>current){
 			current = current + step;
 			res = res + 1;
@@ -181,16 +181,16 @@ public class KVStore {
 		int sslice = this.getSliceForKey(key);
 		if(this.slice==sslice){
 			this.mystore.put(key, data);
-			log.debug("Object inserted into Store. ("+key+","+data.toString()+")");
-			String storecontents = "STORECONTENTS [ ";
-			Set<Long> skeys = mystore.keySet();
-			Iterator<Long> storedkeys = skeys.iterator();
-			while(storedkeys.hasNext()){
-				Long skey = storedkeys.next();
-				storecontents = storecontents + skey + " ";
-			}
-			storecontents = storecontents + "]";
-			log.info(storecontents);
+			//log.debug("Object inserted into Store. ("+key+","+data.toString()+")");
+			//String storecontents = "STORECONTENTS [ ";
+			//Set<Long> skeys = mystore.keySet();
+			//Iterator<Long> storedkeys = skeys.iterator();
+			//while(storedkeys.hasNext()){
+			//	Long skey = storedkeys.next();
+			//	storecontents = storecontents + skey + " ";
+			//}
+			//storecontents = storecontents + "]";
+			//log.info(storecontents);
 			return true;
 		}
 		else{
