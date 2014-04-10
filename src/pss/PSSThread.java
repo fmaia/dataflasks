@@ -43,7 +43,7 @@ public class PSSThread extends Thread {
 		this.pss = pss;
 		this.log = log;
 		try {
-			Thread.sleep(new Long(new Random().nextInt(5000)));
+			Thread.sleep(new Long(new Random().nextInt(20000))+10000);
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

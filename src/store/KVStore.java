@@ -103,6 +103,7 @@ public class KVStore {
 	}
 	
 	public int getSliceForKey(long key){
+		//FIX ME - currently compatible with positive long only
 		long min = 1;//Long.MIN_VALUE;
         long max = Long.MAX_VALUE;
         long step = max/this.nslices; ///2);

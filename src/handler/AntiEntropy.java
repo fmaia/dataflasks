@@ -37,7 +37,7 @@ public class AntiEntropy implements Runnable{
 	private KVStore store;
 	private long interval;
 	private boolean running;
-	private Random grandom;
+	//private Random grandom;
 	private Logger log;
 	private String myIp;
 	private int myPort;
@@ -53,7 +53,7 @@ public class AntiEntropy implements Runnable{
 	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,Random r,Logger log){
 		this.running = true;
 		this.view =v;
-		this.grandom = r;
+		//this.grandom = r;
 		this.log = log;
 		this.interval = interval;
 		this.store = store;
@@ -98,11 +98,11 @@ public class AntiEntropy implements Runnable{
 						time = time + this.interval;
 						this.log.info("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
-						int localsize = myneighbors.size();
-						if(localsize > 0){
-							PeerData toContact = myneighbors.get(grandom.nextInt(localsize));
-							log.debug(time+" to contact:"+toContact.getID());
-
+						//int localsize = myneighbors.size();
+						//if(localsize > 0){
+						//	PeerData toContact = myneighbors.get(grandom.nextInt(localsize));
+						//	log.debug(time+" to contact:"+toContact.getID());
+						for(PeerData toContact : myneighbors){
 							//Contact Peer in order to check if there are missing objects
 							HashSet<Long> mykeys = this.store.getKeys();
 							this.sendPeerKeys(toContact,mykeys);
