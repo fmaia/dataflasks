@@ -20,6 +20,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -41,13 +42,23 @@ public class PSSThread extends Thread {
 	public PSSThread(PSS pss,String ip,Logger log){
 		this.pss = pss;
 		this.log = log;
-		this.exService = Executors.newFixedThreadPool(5);
+		try {
+			Thread.sleep(new Long(new Random().nextInt(5000)));
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		this.log.info("PSSThread before executor.");
+		this.exService = Executors.newFixedThreadPool(1);
+		this.log.info("PSSThread after executor.");
 		try {
 			this.ss = new DatagramSocket(Peer.pssport,InetAddress.getByName(ip));
 		} catch (IOException e) {
 			log.error("PSSThread ERROR in constructor!");
 		}
+		this.log.info("PSSThread after datagramsocket.");
 		this.running = true;
+		this.log.info("PSSThread initialized.");
 	}
 	
 	private class PSSWorker extends Thread{
@@ -82,6 +93,7 @@ public class PSSThread extends Thread {
 	
 	@Override
 	public void run() {
+		this.log.info("PSSThread run...");
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {

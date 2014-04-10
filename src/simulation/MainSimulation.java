@@ -179,6 +179,7 @@ public class MainSimulation {
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
 					peers.put(ip, p);
+					System.out.println("Added peer "+pid+" ip "+ip);
 					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
 					//Writing data for Fake Load Balancer
 					peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
@@ -226,11 +227,13 @@ public class MainSimulation {
 			}
 			
 			//Queuing MAIN for PEERS
+			int count =0;
 			for (Map.Entry<String, Entry<Peer>> val : entrylist.entrySet()){
 				//queue peer main
 				val.getValue().queue().main(new String[0]);
+				count = count + 1;
 			}
-			
+			System.out.println("Queued "+count+" peers.");
 			
 			//COPY PEERLIST file to YCSB node virtual storage
 			if(!loadip.equals("")){
@@ -245,7 +248,6 @@ public class MainSimulation {
 				startuptime = world.run(boottime,TimeUnit.SECONDS);
 			}
 
-			int churnperiodT = 0;
 			
 			//Churn control variables
 			boolean churnonetime_done = false;
@@ -262,7 +264,6 @@ public class MainSimulation {
 			//Observation Cycles Code
 			for(int i=0;i<=cycles;i++){
 				
-				churnperiodT = churnperiodT + 1;
 				long now = world.run(timeinterval,TimeUnit.SECONDS);
 				if (loglevel.equals("debug"))System.out.println("Minha simulation time: "+now);
 				
@@ -325,7 +326,7 @@ public class MainSimulation {
 								}
 								
 							}
-							constantcyclecount = constantcyclecount + 1;
+							constantcyclecount = constantcyclecount + new Long(timeinterval).intValue();
 						}
 					}
 				}
@@ -407,6 +408,7 @@ public class MainSimulation {
 		}
 		Collections.shuffle(ips);
 		String iptoremove = ips.get(0);
+		System.out.println("Going to remove "+iptoremove);
 		Peer tor = peers.get(iptoremove);
 		tor.stopPeer();
 		entrylist.remove(iptoremove);

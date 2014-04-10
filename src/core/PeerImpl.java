@@ -135,10 +135,10 @@ public class PeerImpl implements Peer {
 		this.store.readFromString(storedata);
 		this.flasks = new GroupConstruction(this.store);
 		this.flasks.readFromString(groupdata);
-		if (loglevel.equals("debug")) System.out.println("Store and Flasks loaded."+ this.flasks.getInfo());
+		if (loglevel.equals("info")) System.out.println("Store and Flasks loaded."+ this.flasks.getInfo());
 		this.cyclon = new PSS(this.ip,this.id,this.pssSleepInterval,this.pssboottime,
 				this.pssviewsize,this.flasks);
-		if (loglevel.equals("debug")) System.out.println("Cyclon init. Going to load...");
+		if (loglevel.equals("info")) System.out.println("Cyclon init. Going to load...");
 		this.cyclon.readFromStringList(pssdata);
 		System.out.println("Peer "+this.id+" loaded from file.");
 		
@@ -147,7 +147,7 @@ public class PeerImpl implements Peer {
 
 	@Override
 	public void main(String[] args) {
-
+		
 		try{
 			//SET LOG 
 			this.log = Logger.getLogger(myself);
@@ -178,12 +178,10 @@ public class PeerImpl implements Peer {
 			if(this.loadfromfile){
 				//When data is loaded from file logs need to be propagated
 				//Logs cannot be initialized when the peer is initiated outside simulation.
-				this.store.log = this.log;
+				this.log.info("Loaded from file. init logs");
 				this.flasks.log = this.log;
 				this.cyclon.log = this.log;
-				this.pssthread = new PSSThread(cyclon,this.ip,this.log);
-				pssthread.start();
-				cyclon.start();
+				this.log.info("log init done."+this.store.getSlice()+" "+this.flasks.getGroup());
 			}
 			else{
 				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
@@ -194,20 +192,24 @@ public class PeerImpl implements Peer {
 						this.localinterval,this.store,this.log);
 				this.cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
 						this.pssboottime,this.pssviewsize,this.log,this.flasks);
-				
-				pssthread.start();
-				cyclon.start();
 			}
 
+			this.pssthread = new PSSThread(this.cyclon,this.ip,this.log);
+			this.pssthread.start();
+			this.log.info("PSSThread started.");
+			this.cyclon.start();
+			this.log.info("PSS started.");
+			
 			//Starting the core threads
+			this.log.info("testingviewonly:"+this.testingviewonly);
 			if(!this.testingviewonly){
 				this.log.info("Starting data related threads.");
-				active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),log);
-				Thread tactive = new Thread(active);
-				
-				pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),log);
-				Thread passive = new Thread(pass);
-				
+				this.active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),this.log);
+				Thread tactive = new Thread(this.active);
+				this.log.info("init antientropy.");
+				this.pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),this.log);
+				Thread passive = new Thread(this.pass);
+				this.log.info("init passive thread.");
 				passive.start();
 				tactive.start();
 				this.log.info("Anti entropy and Passive threads started.");

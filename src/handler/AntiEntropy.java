@@ -88,14 +88,15 @@ public class AntiEntropy implements Runnable{
 	public void run() {
 		long time = 0;
 		int cycle = 0;
-		while(running){
-			
+		this.log.info("to run anti-entropy?:"+this.running);
+		while(this.running){
+				this.log.info("Anti Entropy running...");
 				try {
 					Thread.sleep(this.interval);
 					cycle = cycle + 1;
 					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
 						time = time + this.interval;
-						log.info("Anti Entropy cycle "+cycle+" at time "+time);
+						this.log.info("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
 						int localsize = myneighbors.size();
 						if(localsize > 0){

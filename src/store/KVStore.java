@@ -33,14 +33,14 @@ public class KVStore {
 	private HashMap<Long,byte[]> mystore;
 	private int slice;
 	private int nslices;
-	public Logger log;
+	//public Logger log;
 	private HashMap<Long,Boolean> seen;
 	private HashMap<String,Boolean> requestlog;
 	
 
 	
 	public KVStore(Logger log){
-		this.log = log;
+		//this.log = log;
 		this.mystore = new HashMap<Long,byte[]>();
 		this.seen = new HashMap<Long,Boolean>();
 		this.requestlog = new HashMap<String,Boolean>();
@@ -194,7 +194,7 @@ public class KVStore {
 			return true;
 		}
 		else{
-			log.debug("Object received but does not belong in this Store. ("+key+","+data.toString()+")");
+			//log.debug("Object received but does not belong in this Store. ("+key+","+data.toString()+")");
 			return false;
 		}
 	}
