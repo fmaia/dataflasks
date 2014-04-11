@@ -45,7 +45,7 @@ public class PassiveThread implements Runnable {
 	private ExecutorService exService;
 	private SenderSocketHandler sockethandler;
 	
-	public PassiveThread(Long id,KVStore store, PSS view,String ip,int port,float chance, boolean smart, Random rnd,Logger log){
+	public PassiveThread(Long id,KVStore store, PSS view,String ip,int port,float chance, boolean smart, Random rnd,Logger log,long wait){
 		this.running = true;
 		this.log = log;
 		this.store = store;
@@ -56,7 +56,7 @@ public class PassiveThread implements Runnable {
 		this.smart = smart;
 		this.rnd = rnd;
 		try {
-			Thread.sleep(new Long(new Random().nextInt(20000))+10000);
+			Thread.sleep(wait);
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

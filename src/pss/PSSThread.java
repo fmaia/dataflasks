@@ -20,7 +20,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -39,11 +38,11 @@ public class PSSThread extends Thread {
 	
 	private ExecutorService exService;
 	
-	public PSSThread(PSS pss,String ip,Logger log){
+	public PSSThread(PSS pss,String ip,Logger log,long wait){
 		this.pss = pss;
 		this.log = log;
 		try {
-			Thread.sleep(new Long(new Random().nextInt(20000))+10000);
+			Thread.sleep(wait);
 		} catch (InterruptedException e1) {
 			// TODO Auto-generated catch block
 			e1.printStackTrace();

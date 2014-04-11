@@ -114,7 +114,7 @@ public class MainSimulation {
 			long snapshottime = Long.parseLong(prop.getProperty("snapshot"));
 			//ACTIVE THREADS
 			testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
-			activeinterval = (Long.parseLong(prop.getProperty("activeinterval"))+boottime)*1000L;
+			activeinterval = (Long.parseLong(prop.getProperty("activeinterval")))*1000L;
 			replychance = Float.parseFloat(prop.getProperty("replychance"));
 			smart = Boolean.parseBoolean(prop.getProperty("smart"));
 			//YCSB
@@ -175,7 +175,7 @@ public class MainSimulation {
 					String[] storedata = readFileToListOfLines("datain/"+pid+"-store.txt");
 					String[] groupdata = readFileToListOfLines("datain/"+pid+"-groups.txt");
 					String[] pssdata = readFileToListOfLines("datain/"+pid+"-pss.txt");
-					Peer p = e[i].call().initPeerWithData(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
+					Peer p = e[i].call().initPeerWithData(ip,pid,loadfromfile,firstip,psssleepinterval,
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
 					peers.put(ip, p);
@@ -303,7 +303,7 @@ public class MainSimulation {
 								//Add nchurn
 								for(int j=0;j<nchurn;j++){
 									if (loglevel.equals("debug"))System.out.println("Adding node.");
-									addPeer(rnd);
+									addPeer(rnd.nextDouble());
 								}
 							}
 							
@@ -318,11 +318,14 @@ public class MainSimulation {
 								//Remove and add nchurn nodes
 								System.out.println("Constant churn cycle "+constantchurncycle);
 								constantchurncycle = constantchurncycle +1;
+								ArrayList<Double> removedpositions = new ArrayList<Double>();
 								for(int j=0;j<nchurn;j++){
-									removePeer();									
+									double rpos =removePeer();	
+									removedpositions.add(rpos);
 								}
 								for(int j=0;j<nchurn;j++){
-									addPeer(rnd);									
+									double apos = removedpositions.remove(0);
+									addPeer(apos);									
 								}
 								
 							}
@@ -379,11 +382,11 @@ public class MainSimulation {
 	
 	//CHURN-----------------------------------------------------------------------------------------------
 	
-	private static void addPeer(Random rnd) throws ContainerException, IllegalArgumentException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	private static void addPeer(double spos) throws ContainerException, IllegalArgumentException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		
 		lastid = lastid + 1L;
 		Long id = lastid;
-    	Double position = new Double(rnd.nextDouble());
+    	Double position = spos;//new Double(rnd.nextDouble());
     	
 		Host newhost = world.createHost();
 		Process newproc = newhost.createProcess();
@@ -401,7 +404,7 @@ public class MainSimulation {
 		
 	}
 	
-	private static void removePeer() throws IOException{
+	private static double removePeer() throws IOException{
 		ArrayList<String> ips = new ArrayList<String>();
 		for(String ipp : peers.keySet()){
 			ips.add(ipp);
@@ -410,10 +413,12 @@ public class MainSimulation {
 		String iptoremove = ips.get(0);
 		System.out.println("Going to remove "+iptoremove);
 		Peer tor = peers.get(iptoremove);
+		double torpos = tor.getPOS();
 		tor.stopPeer();
 		entrylist.remove(iptoremove);
 		peers.remove(iptoremove);
 		boot.removeIP(iptoremove);
+		return torpos;
 	}
 	
 	//----------------------------------------------------------------------------------------------------
@@ -530,7 +535,7 @@ public class MainSimulation {
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB load at "+initload+" s");
-			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","10","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
+			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=9000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
 			

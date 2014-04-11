@@ -38,7 +38,7 @@ public interface Peer {
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart);
-	public Peer initPeerWithData(String ip,long id,double position,boolean loadfromfile,String bootip, 
+	public Peer initPeerWithData(String ip,long id,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart,

@@ -106,14 +106,13 @@ public class PeerImpl implements Peer {
 	}
 	
 	@Override
-	public Peer initPeerWithData(String ip,long id,double position,boolean loadfromfile,String bootip, 
+	public Peer initPeerWithData(String ip,long id,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
 				int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 				boolean testingviewonly,long activeinterval,float replychance,boolean smart,String[] storedata,String[] groupdata,String[] pssdata) {
 		
 		this.ip = ip;
 		this.id = id;
-		this.position = position;
 		this.loadfromfile = loadfromfile;
 		this.bootip = bootip;
 		this.repmax = repmax;
@@ -135,6 +134,7 @@ public class PeerImpl implements Peer {
 		this.store.readFromString(storedata);
 		this.flasks = new GroupConstruction(this.store);
 		this.flasks.readFromString(groupdata);
+		this.position = this.flasks.getPosition();
 		if (loglevel.equals("info")) System.out.println("Store and Flasks loaded."+ this.flasks.getInfo());
 		this.cyclon = new PSS(this.ip,this.id,this.pssSleepInterval,this.pssboottime,
 				this.pssviewsize,this.flasks);
@@ -172,8 +172,8 @@ public class PeerImpl implements Peer {
 			capp.setName(myself);
 			this.log.addAppender(capp);
 			
-			this.log.info("Initialized "+myself);
-			
+			this.log.info("Initialized "+myself+" with position;"+this.position);
+			long wait = 1000;
 			//START STORE + PSS + GROUP CONSTRUCTION
 			if(this.loadfromfile){
 				//When data is loaded from file logs need to be propagated
@@ -182,6 +182,7 @@ public class PeerImpl implements Peer {
 				this.flasks.log = this.log;
 				this.cyclon.log = this.log;
 				this.log.info("log init done."+this.store.getSlice()+" "+this.flasks.getGroup());
+				wait = new Long(new Random().nextInt(20000))+10000;
 			}
 			else{
 				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
@@ -192,9 +193,10 @@ public class PeerImpl implements Peer {
 						this.localinterval,this.store,this.log);
 				this.cyclon = new PSS(this.bootip,this.ip,this.id,this.pssSleepInterval,
 						this.pssboottime,this.pssviewsize,this.log,this.flasks);
+				wait = 0;
 			}
-
-			this.pssthread = new PSSThread(this.cyclon,this.ip,this.log);
+			
+			this.pssthread = new PSSThread(this.cyclon,this.ip,this.log,wait);
 			this.pssthread.start();
 			this.log.info("PSSThread started.");
 			this.cyclon.start();
@@ -204,10 +206,10 @@ public class PeerImpl implements Peer {
 			this.log.info("testingviewonly:"+this.testingviewonly);
 			if(!this.testingviewonly){
 				this.log.info("Starting data related threads.");
-				this.active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,new Random(),this.log);
+				this.active = new AntiEntropy(this.ip,Peer.port,this.id,this.cyclon,this.store,this.activeinterval,this.pssboottime,new Random(),this.log);
 				Thread tactive = new Thread(this.active);
 				this.log.info("init antientropy.");
-				this.pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),this.log);
+				this.pass = new PassiveThread(this.id,this.store,this.cyclon,this.ip,Peer.port,this.replychance,this.smart,new Random(),this.log,wait);
 				Thread passive = new Thread(this.pass);
 				this.log.info("init passive thread.");
 				passive.start();

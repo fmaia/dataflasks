@@ -36,6 +36,7 @@ public class AntiEntropy implements Runnable{
 	private PSS view;
 	private KVStore store;
 	private long interval;
+	private long boottime;
 	private boolean running;
 	//private Random grandom;
 	private Logger log;
@@ -50,7 +51,7 @@ public class AntiEntropy implements Runnable{
 		this.log.info("Stopping Anti Entropy.");
 	}
 	
-	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,Random r,Logger log){
+	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,long boottime,Random r,Logger log){
 		this.running = true;
 		this.view =v;
 		//this.grandom = r;
@@ -60,6 +61,7 @@ public class AntiEntropy implements Runnable{
 		this.myIp = myIp;
 		this.myPort = myPort;
 		this.myID = myID;
+		this.boottime = boottime;
 		try {
 			this.socketsender = new DatagramSocket(Peer.outantientropyport);
 		} catch (SocketException e) {
@@ -75,7 +77,7 @@ public class AntiEntropy implements Runnable{
 	private void sendPeerKeys(PeerData p,HashSet<Long> mykeys){
 		try{
 			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys).encodeMessage();
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(myIp), myPort);
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			this.socketsender.send(packet);		
 		} catch (IOException e) {
 			this.log.debug("ERROR sendPeerKeys in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
@@ -86,13 +88,23 @@ public class AntiEntropy implements Runnable{
 	
 	@Override
 	public void run() {
+		try{
+			this.log.info("Anti Entropy sleeping "+this.boottime);
+			Thread.sleep(this.boottime);
+		} catch (InterruptedException e) {
+			this.log.error("ERROR in ACTIVETHREAD sleeping botttime!");
+			e.printStackTrace();
+		}
 		long time = 0;
 		int cycle = 0;
 		this.log.info("to run anti-entropy?:"+this.running);
 		while(this.running){
 				this.log.info("Anti Entropy running...");
 				try {
+					
+					this.log.info("Anti Entropy sleeping "+this.interval);
 					Thread.sleep(this.interval);
+					this.log.info("Anti Entropy waked up ");
 					cycle = cycle + 1;
 					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
 						time = time + this.interval;
@@ -106,12 +118,12 @@ public class AntiEntropy implements Runnable{
 							//Contact Peer in order to check if there are missing objects
 							HashSet<Long> mykeys = this.store.getKeys();
 							this.sendPeerKeys(toContact,mykeys);
-							log.debug("Anti Entropy request sent to "+toContact.getID());
+							this.log.debug("Anti Entropy request sent to "+toContact.getID()+" with "+mykeys.size()+" keys at cycle "+cycle);
 						}
 
 					}
 				} catch (InterruptedException e) {
-					log.error("ERROR in ACTIVETHREAD!");
+					this.log.error("ERROR in ACTIVETHREAD!");
 					e.printStackTrace();
 				}
 				

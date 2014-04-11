@@ -95,16 +95,17 @@ public class Worker implements Runnable {
 	}
 	
 	
-	private int sendget(PeerData p, Long key, String ip, int port){
+	private int sendget(String targetip, Long key, String ip, int port){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
-			byte[] toSend = Message.encodeMessageGet(ip,port,key,"intern",this.myid);
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			socket.send(packet);		
+			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,"intern",this.myid);
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
+			socket.send(packet);
+			this.log.info("Anti entropy get sent.");
 			this.sockethandler.returnSocket(socket);
 			return 0;
 		} catch (IOException e) {
-			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
+			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
 			//e.printStackTrace();
 		}
 		return 1;
@@ -247,7 +248,7 @@ public class Worker implements Runnable {
 			break;
 		case 4:
 			//Exchange Operation
-			this.log.info("PassiveThread Received Anti-Entropy request.");
+			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msg.keys.size()+" keys.");
 			HashSet<Long> mykeys = this.store.getKeys();
 			HashSet<Long> toRequest = new HashSet<Long>();
 			for(Long l : msg.keys){
@@ -255,11 +256,14 @@ public class Worker implements Runnable {
 					toRequest.add(l);
 				}
 			}
-			PeerData toContact = this.view.getRandomPeer();
-			//Ask for objects I do not hold.
+			//PeerData toContact = this.view.getRandomPeerFromLocalView();
+			//if(toContact!=null){
+				//Ask for objects I do not hold.
+			this.log.info("Anti entropy - going to ask for keys to "+this.msg.id+" keystoRequest:"+toRequest.size());
 			for (Long k : toRequest){
-				sendget(toContact,k,ip,port);
+				sendget(this.msg.ip,k,this.myip,Peer.port);
 			}
+			//}
 			break;
 		case 10:
 			//Reply to Exchange Gets

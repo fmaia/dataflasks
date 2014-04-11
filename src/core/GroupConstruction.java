@@ -52,9 +52,12 @@ public class GroupConstruction {
 	
 	private int cycle;
 	
+	private boolean firstmessage;
+	
 	
 	public GroupConstruction(KVStore thestore){
 		this.store = thestore;
+		this.firstmessage = true;
 		try {
 			this.sendersocket = new DatagramSocket(Peer.outgroupport);
 		} catch (SocketException e) {
@@ -104,6 +107,7 @@ public class GroupConstruction {
 	
 	public GroupConstruction(String ip,long id,double position, int replicationfactorMin,
 			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, Logger log){
+		this.firstmessage = false;
 		this.id = id;
 		this.position = position;
 		this.ngroups = 1;
@@ -212,79 +216,91 @@ public class GroupConstruction {
 
 	public synchronized void receiveMessage(ArrayList<PeerData> received) {
 		this.log.debug("GroupConstruction - PSS message received");
+		
+		//When a peer boots it must keep up with peers
+		int ngroupsfrompeers = 1;
+		
+		//AGING VIEW
+		for(PeerData r : localview){
+			r.setAge(r.getAge() + 1);
+		}
 
-			//AGING VIEW
-			for(PeerData r : localview){
-				r.setAge(r.getAge() + 1);
-			}
-
-			//ADD RECEIVED
-			for (PeerData r : received){
-				if(group(r.getPos())==this.group && !(r.getID()==this.id)){
-					if(!this.localview.contains(r)){
-						this.localview.add(r);
-					}
-					else{
-						int index = this.localview.indexOf(r);
-						if(this.localview.get(index).getAge()>r.getAge()){
-							this.localview.remove(index);
-							this.localview.add(r);
-						}
-					}
+		//ADD RECEIVED
+		for (PeerData r : received){
+			if(this.firstmessage){
+				if(r.getNslices()>this.ngroups){
+					ngroupsfrompeers = r.getNslices();
 				}
 			}
-
-			//CLEAN VIEW
-			ArrayList<PeerData> torem = new ArrayList<PeerData>();
-			for (PeerData r : this.localview){
-				if(group(r.getPos())!=this.group){
-					torem.add(r);
+			if(group(r.getPos())==this.group && !(r.getID()==this.id)){
+				if(!this.localview.contains(r)){
+					this.localview.add(r);
 				}
 				else{
-					if(r.getAge()>maxage){
-						torem.add(r);
+					int index = this.localview.indexOf(r);
+					if(this.localview.get(index).getAge()>r.getAge()){
+						this.localview.remove(index);
+						this.localview.add(r);
 					}
 				}
 			}
-			for(PeerData r : torem){
-				this.localview.remove(r);
-			}
+		}
 
-			//SEARCH FOR VIOLATIONS
-			int estimation = this.localview.size(); //countEqual();
-			this.log.debug("GroupConstruction - estimation = "+estimation);
-			if((estimation+1)<this.replicationfactorMin){
-				if(this.ngroups>1){
-					this.ngroups = this.ngroups/2; 
+		//CLEAN VIEW
+		ArrayList<PeerData> torem = new ArrayList<PeerData>();
+		for (PeerData r : this.localview){
+			if(group(r.getPos())!=this.group){
+				torem.add(r);
+			}
+			else{
+				if(r.getAge()>maxage){
+					torem.add(r);
 				}
 			}
-			if((estimation+1)>this.replicationfactorMax){
-				this.ngroups = this.ngroups*2;
+		}
+		for(PeerData r : torem){
+			this.localview.remove(r);
+		}
+
+		//SEARCH FOR VIOLATIONS
+		int estimation = this.localview.size(); //countEqual();
+		this.log.debug("GroupConstruction - estimation = "+estimation);
+		if((estimation+1)<this.replicationfactorMin){
+			if(this.ngroups>1){
+				this.ngroups = this.ngroups/2; 
 			}
-			this.group = group(this.position);
-			this.store.updatePartition(this.group, this.ngroups);
+		}
+		if((estimation+1)>this.replicationfactorMax){
+			this.ngroups = this.ngroups*2;
+		}
+		if(this.firstmessage){
+			this.ngroups = ngroupsfrompeers;
+			this.firstmessage = false;
+		}
+		this.group = group(this.position);
+		this.store.updatePartition(this.group, this.ngroups);
 
 
-			//SEND LOCAL VIEW TO NEIGHBORS
-			if(this.local && (this.cycle%this.localinterval==0)){
-				ArrayList<PeerData> tosend = new ArrayList<PeerData>();
-				PeerData myself = new PeerData(this.ip,this.ngroups,0,this.group,this.position,this.id);
-				tosend.add(myself);
-				for(PeerData r : this.localview){
-					tosend.add((PeerData)r.clone());
+		//SEND LOCAL VIEW TO NEIGHBORS
+		if(this.local && (this.cycle%this.localinterval==0)){
+			ArrayList<PeerData> tosend = new ArrayList<PeerData>();
+			PeerData myself = new PeerData(this.ip,this.ngroups,0,this.group,this.position,this.id);
+			tosend.add(myself);
+			for(PeerData r : this.localview){
+				tosend.add((PeerData)r.clone());
+			}
+			this.log.debug("Local Group Dissemination Active. Cycle: "+cycle+" TOSENDsize:"+tosend.size());
+			this.log.info("Group Dissemination - sending local view. Cycle: "+cycle);
+			for(PeerData r : tosend){
+				this.log.debug("GroupConstruction - tosend ids: "+r.getID());
+				if(r.getID()!=this.id){
+					//SEND MESSAGE
+					this.log.debug("Group Construction Sending local message...");
+					PSSMessage tsmsg = new PSSMessage(tosend, TYPE.LOCAL, this.ip);
+					this.log.debug("Group Construction created message to send.");
+					int res = this.sendMsg(r, tsmsg);
+					this.log.debug("Group Construction local message sent to "+r.getID()+" res="+res);
 				}
-				this.log.debug("Local Group Dissemination Active. Cycle: "+cycle+" TOSENDsize:"+tosend.size());
-				this.log.info("Group Dissemination - sending local view. Cycle: "+cycle);
-				for(PeerData r : tosend){
-					this.log.debug("GroupConstruction - tosend ids: "+r.getID());
-					if(r.getID()!=this.id){
-						//SEND MESSAGE
-						this.log.debug("Group Construction Sending local message...");
-						PSSMessage tsmsg = new PSSMessage(tosend, TYPE.LOCAL, this.ip);
-						this.log.debug("Group Construction created message to send.");
-						int res = this.sendMsg(r, tsmsg);
-						this.log.debug("Group Construction local message sent to "+r.getID()+" res="+res);
-					}
 			}
 		}
 

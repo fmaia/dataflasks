@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
@@ -306,7 +305,7 @@ public class PSS extends Thread{
 	private synchronized void insertSentToView(ArrayList<PeerData> source){
 		while(this.myview.size()<this.viewsize && source.size()>0){
 			PeerData tmp = source.remove(0);
-			if(tmp.getIp()!=this.ip){
+			if(tmp.getID()!=this.id){
 				PeerData current = (PeerData)this.myview.get(tmp.getIp());
 				if(current!=null){
 					int currentage =current.getAge();
@@ -346,7 +345,7 @@ public class PSS extends Thread{
 		log.debug("message received from "+msg.sender);
 		ArrayList<PeerData> source = new ArrayList<PeerData>();
 		for(PeerData ptmp : msg.list){
-			if(ptmp.getIp()!=this.ip){
+			if(ptmp.getID()!=this.id){
 				source.add((PeerData)ptmp.clone());
 			}
 		}
@@ -365,7 +364,7 @@ public class PSS extends Thread{
 				ArrayList<PeerData> tosend = this.selectToSendGlobal(msg.sender);
 				ArrayList<PeerData> tofillemptyview = new ArrayList<PeerData>();
 				for(PeerData p : tosend){
-					if(p.getIp()!=this.ip){
+					if(p.getID()!=this.id){
 						tofillemptyview.add((PeerData)p.clone());
 					}
 				}
@@ -440,19 +439,15 @@ public class PSS extends Thread{
 		return res;
 	}
 	
-	public synchronized PeerData getRandomPeer(){
-		PeerData res = null;
-		int s =  this.myview.values().size() + this.sentPeerData.size();
-		int pos = this.grandom.nextInt(s);
-		ArrayList<PeerData> tmp = new ArrayList<PeerData>();
-		tmp.addAll(this.myview.values());
-		tmp.addAll(this.sentPeerData);
-		Iterator<PeerData> it = tmp.iterator();
-		while(pos>0 && it.hasNext()){
-			res = (PeerData)it.next();
-			pos = pos - 1;
+	public synchronized PeerData getRandomPeerFromLocalView(){
+		ArrayList<PeerData> localv = this.groupc.getLocalView();
+		if(localv.isEmpty()){
+			return null;
 		}
-		return res;
+		else{
+			Collections.shuffle(localv);
+			return localv.get(0);
+		}
 	}
 	
 	public synchronized ArrayList<PeerData> getSliceLocalView(int slice){

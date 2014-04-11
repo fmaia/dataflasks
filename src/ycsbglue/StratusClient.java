@@ -183,7 +183,8 @@ public class StratusClient extends DB {
 
 	@Override
 	public int insert(String arg0, String arg1, HashMap<String, ByteIterator> arg2) {
-		long key = this.hash(arg0+arg1);
+		//FIX ME - abs function below is for test purposes only. Linked with fix me from kvstore sliceforkey method
+		long key = Math.abs(this.hash(arg0+arg1));
 		String[] keyset = arg2.keySet().toArray(new String[1]);
 		String column = keyset[0];
 		ByteIterator vl = arg2.get(column);
