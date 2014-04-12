@@ -37,6 +37,7 @@ import utilities.TimeAdvancer;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -337,7 +338,7 @@ public class MainSimulation {
 								constantchurncycle = constantchurncycle +1;
 								ArrayList<Double> removedpositions = new ArrayList<Double>();
 								//removing distributing per group
-								ArrayList<String> ipstorem = removePeersDistributed(nchurnpergroup,desiredngroups);
+								HashSet<String> ipstorem = removePeersDistributed(nchurnpergroup,desiredngroups);
 								for(String rip : ipstorem){
 									double rpos =removePeer(rip);	
 									removedpositions.add(rpos);
@@ -438,7 +439,7 @@ public class MainSimulation {
 		entrylist.remove(iptoremove);
 		peers.remove(iptoremove);
 		boot.removeIP(iptoremove);
-		peerposition.remove(tor.getPOS());
+		peerposition.remove(torpos);
 		return torpos;
 	}
 	
@@ -454,8 +455,8 @@ public class MainSimulation {
 		return torpos;
 	}
 	
-	private static ArrayList<String> removePeersDistributed(int ntorem,int desiredngroups){
-		ArrayList<String> res = new ArrayList<String>();
+	private static HashSet<String> removePeersDistributed(int ntorem,int desiredngroups){
+		HashSet<String> res = new HashSet<String>();
 		ArrayList<Double> poss = new ArrayList<Double>();
 		for(Double d :peerposition.keySet()){
 			poss.add(new Double(d));
@@ -467,14 +468,10 @@ public class MainSimulation {
 		max = step;
 		for(int i=0;i<desiredngroups;i++){
 			ArrayList<Double> temp = new ArrayList<Double>();
-			int value = 0;
-			double currentpos = 0;
-			while(currentpos<max && value<poss.size()){
-				currentpos = poss.get(value);
-				if(currentpos>min){
+			for(double currentpos : poss){
+				if(currentpos>min && currentpos<=max){
 					temp.add(currentpos);
 				}
-				value = value + 1;
 			}
 			System.out.println("ntorem:"+ntorem+" sizeoflist:"+temp.size()+" min:"+min+" max:"+max);
 			min = max;

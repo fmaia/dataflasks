@@ -106,7 +106,7 @@ public class AntiEntropy implements Runnable{
 					Thread.sleep(this.interval);
 					this.log.info("Anti Entropy waked up ");
 					cycle = cycle + 1;
-					if(running && cycle<3){ //Treat the case where the Peer was removed and the Thread is assleep. 
+					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
 						time = time + this.interval;
 						this.log.info("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
