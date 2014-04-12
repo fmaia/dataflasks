@@ -105,6 +105,7 @@ public class MainSimulation {
 			boottime = Long.parseLong(prop.getProperty("boottime"));
 			peerlistfile = prop.getProperty("peerlistfile");
 			cycles = Integer.parseInt(prop.getProperty("cycles"));
+			cycles = (int) (cycles * timeinterval);
 			psssleepinterval = Long.parseLong(prop.getProperty("psssleepinterval"))*1000L;
 			repmax = Integer.parseInt(prop.getProperty("repmax"));
 			repmin = Integer.parseInt(prop.getProperty("repmin"));
