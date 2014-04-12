@@ -56,6 +56,7 @@ public class MainSimulation {
 	private static String firstip;
 	private static HashMap<String,Entry<Peer>> entrylist;
 	private static HashMap<String,Peer> peers;
+	private static HashMap<Double,String> peerposition;
 	//Bootstrapper
 	private static Bootstrapper boot;
 	
@@ -92,6 +93,7 @@ public class MainSimulation {
 
 			entrylist = new HashMap<String, Entry<Peer>>();
 			peers = new HashMap<String,Peer>();
+			peerposition = new HashMap<Double,String>();
 
 			Properties prop = new Properties();
 			prop.load(new FileInputStream("config/config.properties"));
@@ -128,12 +130,24 @@ public class MainSimulation {
 			String churn_class = prop.getProperty("churn_class");
 			double churn_percentage = Double.parseDouble(prop.getProperty("churn_percentage"));
 			int nchurn = (int) Math.ceil(number_of_peers*churn_percentage);
+			//CHURN PER GROUP - distributing churn for the groups
+			int desiredngroups = 1;
+			// ---- figuring out which is the desired ngroups 
+			while(((number_of_peers/desiredngroups)>repmax)){
+				desiredngroups = desiredngroups * 2;
+			}
+			int nchurnpergroup = (int) Math.ceil((number_of_peers/desiredngroups)*churn_percentage);
+			
+			
+			
+			//PRINTING INFO
 			System.out.println("times -> bootime: "+boottime+" ycsbLoad: "+initload+" ycsbRun: "+initrun);
 			if(churn_type.equals("off")){
 				System.out.println("churn -> type: "+churn_type);
 			}
 			else{
 				System.out.println("churn -> type: "+churn_type+" class: "+churn_class+" start: "+start_time+" stop: "+stop_time+" interval: "+churn_interval+" percentage: "+churn_percentage);
+				System.out.println("churn numbers -> nchurn: "+nchurn+" desiredgroups: " +desiredngroups+" churnpergroup: "+nchurnpergroup);
 			}
 			System.out.println("Loading from file -> "+loadfromfile);
 			
@@ -179,6 +193,7 @@ public class MainSimulation {
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
 					peers.put(ip, p);
+					peerposition.put(p.getPOS(), ip);
 					System.out.println("Added peer "+pid+" ip "+ip);
 					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
 					//Writing data for Fake Load Balancer
@@ -189,6 +204,7 @@ public class MainSimulation {
 						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 						testingviewonly,activeinterval,replychance,smart);
 					peers.put(ip, p);
+					peerposition.put(p.getPOS(), ip);
 					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
 					//Writing data for Fake Load Balancer
 					peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
@@ -319,8 +335,10 @@ public class MainSimulation {
 								System.out.println("Constant churn cycle "+constantchurncycle);
 								constantchurncycle = constantchurncycle +1;
 								ArrayList<Double> removedpositions = new ArrayList<Double>();
-								for(int j=0;j<nchurn;j++){
-									double rpos =removePeer();	
+								//removing distributing per group
+								ArrayList<String> ipstorem = removePeersDistributed(nchurnpergroup,desiredngroups);
+								for(String rip : ipstorem){
+									double rpos =removePeer(rip);	
 									removedpositions.add(rpos);
 								}
 								for(int j=0;j<nchurn;j++){
@@ -400,6 +418,7 @@ public class MainSimulation {
 		entrylist.put(ip, newpeer);
 		peers.put(ip, newpeerref);
 		boot.addIP(ip, id, position);
+		peerposition.put(position, ip);
 		newpeer.queue().main(new String[0]);
 		
 	}
@@ -418,7 +437,54 @@ public class MainSimulation {
 		entrylist.remove(iptoremove);
 		peers.remove(iptoremove);
 		boot.removeIP(iptoremove);
+		peerposition.remove(tor.getPOS());
 		return torpos;
+	}
+	
+	private static double removePeer(String iptoremove) throws IOException{
+		System.out.println("Going to remove "+iptoremove);
+		Peer tor = peers.get(iptoremove);
+		double torpos = tor.getPOS();
+		tor.stopPeer();
+		entrylist.remove(iptoremove);
+		peers.remove(iptoremove);
+		boot.removeIP(iptoremove);
+		peerposition.remove(torpos);
+		return torpos;
+	}
+	
+	private static ArrayList<String> removePeersDistributed(int ntorem,int desiredngroups){
+		ArrayList<String> res = new ArrayList<String>();
+		ArrayList<Double> poss = new ArrayList<Double>();
+		for(Double d :peerposition.keySet()){
+			poss.add(new Double(d));
+		}
+		Collections.sort(poss);
+		Double min = 0.0;
+		Double max = 0.0;
+		Double step = 1.0/new Double(desiredngroups);
+		max = step;
+		for(int i=0;i<desiredngroups;i++){
+			ArrayList<Double> temp = new ArrayList<Double>();
+			int value = 0;
+			double currentpos = 0;
+			while(currentpos<max && value<poss.size()){
+				currentpos = poss.get(value);
+				if(currentpos>min){
+					temp.add(currentpos);
+				}
+				value = value + 1;
+			}
+			System.out.println("ntorem:"+ntorem+" sizeoflist:"+temp.size()+" min:"+min+" max:"+max);
+			min = max;
+			max = max + step;
+			
+			for(int j=0;j<ntorem;j++){
+				Collections.shuffle(temp);
+				res.add(peerposition.get(temp.remove(0)));
+			}
+		}
+		return res;
 	}
 	
 	//----------------------------------------------------------------------------------------------------
