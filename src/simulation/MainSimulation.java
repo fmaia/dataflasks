@@ -32,6 +32,7 @@ import pt.minha.api.Main;
 import pt.minha.api.World;
 import pt.minha.api.sim.Simulation;
 import pt.minha.api.Process;
+import store.KVStore;
 import utilities.TimeAdvancer;
 
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ public class MainSimulation {
 	private static String firstip;
 	private static HashMap<String,Entry<Peer>> entrylist;
 	private static HashMap<String,Peer> peers;
-	private static HashMap<Double,String> peerposition;
+	private static HashMap<Integer,ArrayList<String>> idealconfig;
 	//Bootstrapper
 	private static Bootstrapper boot;
 	
@@ -94,7 +95,8 @@ public class MainSimulation {
 
 			entrylist = new HashMap<String, Entry<Peer>>();
 			peers = new HashMap<String,Peer>();
-			peerposition = new HashMap<Double,String>();
+			
+			idealconfig = new HashMap<Integer,ArrayList<String>>();
 
 			Properties prop = new Properties();
 			prop.load(new FileInputStream("config/config.properties"));
@@ -195,7 +197,6 @@ public class MainSimulation {
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
 					peers.put(ip, p);
-					peerposition.put(p.getPOS(), ip);
 					System.out.println("Added peer "+pid+" ip "+ip);
 					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
 					//Writing data for Fake Load Balancer
@@ -206,14 +207,28 @@ public class MainSimulation {
 						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 						testingviewonly,activeinterval,replychance,smart);
 					peers.put(ip, p);
-					peerposition.put(p.getPOS(), ip);
 					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
 					//Writing data for Fake Load Balancer
 					peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
 				}
 				entrylist.put(ip, e[i]);
 				boot.addIP(ip,pid,npos);
-
+				
+				//test purposes
+				int ideal_group_for_peer = (int) Math.ceil((new Double(desiredngroups))*npos);
+				if(ideal_group_for_peer == 0){
+					ideal_group_for_peer = 1;
+				}
+				ArrayList<String> list = idealconfig.get(ideal_group_for_peer);
+				if(list==null){
+					list = new ArrayList<String>();
+					list.add(ip);
+					idealconfig.put(ideal_group_for_peer, list);
+				}
+				else{
+					list.add(ip);
+					idealconfig.put(ideal_group_for_peer, list);
+				}
 			}
 			//Writing data for Fake Load Balancer
 			PrintWriter out = new PrintWriter(peerlistfile);
@@ -336,17 +351,17 @@ public class MainSimulation {
 								//Remove and add nchurn nodes
 								System.out.println("Constant churn cycle "+constantchurncycle);
 								constantchurncycle = constantchurncycle +1;
-								ArrayList<Double> removedpositions = new ArrayList<Double>();
+								//ArrayList<Double> removedpositions = new ArrayList<Double>();
 								//removing distributing per group
-								HashSet<String> ipstorem = removePeersDistributed(nchurnpergroup,desiredngroups);
-								for(String rip : ipstorem){
-									double rpos =removePeer(rip);	
-									removedpositions.add(rpos);
-								}
-								for(int j=0;j<nchurn;j++){
-									double apos = removedpositions.remove(0);
-									addPeer(apos);									
-								}
+								removeAddPeersDistributed(nchurnpergroup,desiredngroups,rnd);
+//								for(String rip : ipstorem){
+//									double rpos =removePeer(rip);	
+//									removedpositions.add(rpos);	
+//								}
+//								for(int j=0;j<nchurn;j++){
+//									double apos = removedpositions.remove(0);
+//									addPeer(apos);									
+//								}
 								
 							}
 							constantcyclecount = constantcyclecount + new Long(timeinterval).intValue();
@@ -402,7 +417,7 @@ public class MainSimulation {
 	
 	//CHURN-----------------------------------------------------------------------------------------------
 	
-	private static void addPeer(double spos) throws ContainerException, IllegalArgumentException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+	private static String addPeer(double spos) throws ContainerException, IllegalArgumentException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
 		
 		lastid = lastid + 1L;
 		Long id = lastid;
@@ -414,18 +429,18 @@ public class MainSimulation {
 		
 		Entry<Peer> newpeer = newproc.createEntry(core.Peer.class,core.PeerImpl.class.getName());
 		Peer newpeerref = newpeer.call().initPeer(ip, id, position,false,firstip,psssleepinterval,
-				0,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
+				new Random().nextInt(3000),viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 				testingviewonly,activeinterval,replychance,smart);
 		
 		entrylist.put(ip, newpeer);
 		peers.put(ip, newpeerref);
 		boot.addIP(ip, id, position);
-		peerposition.put(position, ip);
 		newpeer.queue().main(new String[0]);
+		return ip;
 		
 	}
 	
-	private static double removePeer() throws IOException{
+	private static double removePeer() {
 		ArrayList<String> ips = new ArrayList<String>();
 		for(String ipp : peers.keySet()){
 			ips.add(ipp);
@@ -439,11 +454,10 @@ public class MainSimulation {
 		entrylist.remove(iptoremove);
 		peers.remove(iptoremove);
 		boot.removeIP(iptoremove);
-		peerposition.remove(torpos);
 		return torpos;
 	}
 	
-	private static double removePeer(String iptoremove) throws IOException{
+	private static double removePeer(String iptoremove){
 		System.out.println("Going to remove "+iptoremove);
 		Peer tor = peers.get(iptoremove);
 		double torpos = tor.getPOS();
@@ -451,38 +465,31 @@ public class MainSimulation {
 		entrylist.remove(iptoremove);
 		peers.remove(iptoremove);
 		boot.removeIP(iptoremove);
-		peerposition.remove(torpos);
 		return torpos;
 	}
 	
-	private static HashSet<String> removePeersDistributed(int ntorem,int desiredngroups){
-		HashSet<String> res = new HashSet<String>();
-		ArrayList<Double> poss = new ArrayList<Double>();
-		for(Double d :peerposition.keySet()){
-			poss.add(new Double(d));
-		}
-		Collections.sort(poss);
-		Double min = 0.0;
-		Double max = 0.0;
-		Double step = 1.0/new Double(desiredngroups);
-		max = step;
-		for(int i=0;i<desiredngroups;i++){
-			ArrayList<Double> temp = new ArrayList<Double>();
-			for(double currentpos : poss){
-				if(currentpos>min && currentpos<=max){
-					temp.add(currentpos);
+	private static void removeAddPeersDistributed(int ntorem,int desiredngroups, Random rnd) throws IllegalArgumentException, SecurityException, ContainerException, ClassNotFoundException, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException{
+		for(int i=1;i<=desiredngroups;i++){
+			ArrayList<String> ipsingroup = idealconfig.get(i);
+			ArrayList<String> ips = new ArrayList<String>();
+			for(String ipp : ipsingroup){
+				ips.add(ipp);
+			}
+			Collections.shuffle(ips);
+			if(ipsingroup.size()>=ntorem){
+				for(int j=0;j<ntorem;j++){
+					String toremove = ips.remove(0);
+					double rempos = removePeer(toremove);
+					String added = addPeer(rempos);
+					ipsingroup.remove(toremove);
+					ipsingroup.add(added);
+					idealconfig.put(i, ipsingroup);
+					System.out.println("Removed "+toremove+" and Added "+added);
 				}
 			}
-			System.out.println("ntorem:"+ntorem+" sizeoflist:"+temp.size()+" min:"+min+" max:"+max);
-			min = max;
-			max = max + step;
 			
-			for(int j=0;j<ntorem;j++){
-				Collections.shuffle(temp);
-				res.add(peerposition.get(temp.remove(0)));
-			}
+			
 		}
-		return res;
 	}
 	
 	//----------------------------------------------------------------------------------------------------
@@ -528,7 +535,9 @@ public class MainSimulation {
 				//writing keyset to disk for offline processing
 				fstream = new FileWriter("logs/keyset/"+(now/1000000000)+".txt");
 				fout = new BufferedWriter(fstream);
-				for(Long chave :storedKeys.keySet()){
+				List<Long> longkeys = new ArrayList<Long>(storedKeys.keySet());
+				Collections.sort(longkeys);
+				for(Long chave :longkeys){
 					fout.write(chave+" "+storedKeys.get(chave)+"\n");
 				}
 				fout.close();

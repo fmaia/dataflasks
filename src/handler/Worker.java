@@ -234,12 +234,12 @@ public class Worker implements Runnable {
 						//Send value to Client
 						Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,this.myid);
 						this.replyClient(replymsg);
-						this.log.debug("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
+						this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
 						//Already replied to Client so no need to forward the request
 					}
 					else{
 						//Do not hold the value - need to forward the request.
-						this.log.debug("ANTI ENTROPY GET RECEIVED BUT HOST DOES NOT HOLD VALUE FORWARDING. req_id:"+requestid);
+						this.log.info("ANTI ENTROPY GET RECEIVED BUT HOST DOES NOT HOLD VALUE FORWARDING. req_id:"+requestid);
 						ArrayList<PeerData> myview = this.view.getView();
 						this.forwardMessage(myview);
 					}
@@ -251,9 +251,16 @@ public class Worker implements Runnable {
 			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msg.keys.size()+" keys.");
 			HashSet<Long> mykeys = this.store.getKeys();
 			HashSet<Long> toRequest = new HashSet<Long>();
-			for(Long l : msg.keys){
-				if(!mykeys.contains(l)){
+			if(mykeys.isEmpty()){
+				for(Long l : msg.keys){
 					toRequest.add(l);
+				}
+			}
+			else{
+				for(Long l : msg.keys){
+					if(!mykeys.contains(l)){
+						toRequest.add(l);
+					}
 				}
 			}
 			//PeerData toContact = this.view.getRandomPeerFromLocalView();
@@ -267,7 +274,7 @@ public class Worker implements Runnable {
 			break;
 		case 10:
 			//Reply to Exchange Gets
-			this.log.debug("Value with key:"+msg.key+" received in antriEntropy mechanism");
+			this.log.info("Value with key:"+msg.key+" received in antiEntropy mechanism");
 			this.store.put(msg.key, msg.value);
 
 			break;
