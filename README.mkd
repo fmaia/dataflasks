@@ -1,0 +1,44 @@
+# Description:
+
+DataFlasks is a key-value data store built solely based on gossip-based protocols.
+It leverages the inherent characteristics of such protocols to be able to provide data persistence guarantees even in highly dynamic, massive scale systems.
+
+# About: 
+
+Currently, DataFlasks runs over the Minha framework - http://www.minha.pt (Google Faculty Research Award).
+The core components of DataFlasks are also ready to run in a real deployment, however at the moment they require a bootstart server. 
+Resolving this issue is ongoing work.
+
+# Requirements
+
+## Minha
+    www.minha.pt 
+
+
+# Build
+
+Place Minha dependencies and Minha itself on folder named "lib".
+Run "ant jar"
+
+# Configuration 
+
+Folder 'config' holds the configuration file.
+These should be the only place where you would need to tune DataFlasks.
+
+# Usage
+
+1. Run "./runDataFlasks.sh
+
+
+# Feedback
+
+Updated source and an issue tracker are available at:
+	
+	https://github.com/fmaia/dataflasks
+
+Your feedback is welcome.
+
+#Contact
+
+Francisco Maia (<fmaia@di.uminho.pt>)
+
