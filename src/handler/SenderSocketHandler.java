@@ -7,7 +7,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.apache.log4j.Logger;
 
-import ycsbglue.StratusClient;
+import client.YCSBGlue;
 import core.Peer;
 
 
@@ -18,7 +18,7 @@ public class SenderSocketHandler {
 	
 	public static int getNewSenderPort(int initport){
 		int res = 0;
-		synchronized(StratusClient.class){
+		synchronized(YCSBGlue.class){
 			if(shlastport==0){
 				shlastport=initport;
 			}

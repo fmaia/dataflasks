@@ -32,13 +32,10 @@ import pt.minha.api.Main;
 import pt.minha.api.World;
 import pt.minha.api.sim.Simulation;
 import pt.minha.api.Process;
-import store.KVStore;
-import utilities.TimeAdvancer;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -170,9 +167,12 @@ public class MainSimulation {
 			firstip = bootstrapperHost.getAddress().getCanonicalHostName();
 			boot = booter.call().initBootstrapper(0,viewsize,firstip);
 			booter.queue().main(new String[0]);
+			
+			System.out.println("Bootstrapper created and queued.");
 
 			Entry<Peer>[] e = world.createEntries(number_of_peers,core.Peer.class,core.PeerImpl.class.getName());
 
+			System.out.println("Initial Entries created in Minha. Going to initialize each with a Peer.");
 
 			//forcing uniformity
 			double step = 1.0/number_of_peers;
@@ -188,29 +188,25 @@ public class MainSimulation {
 				long pid = lastid+1L;
 				lastid = pid;
 				long pssboottime = boottime*1000L;
+				Peer p;
 				if(loadfromfile){
 					//pssboottime = 0L;
 					String[] storedata = readFileToListOfLines("datain/"+pid+"-store.txt");
 					String[] groupdata = readFileToListOfLines("datain/"+pid+"-groups.txt");
 					String[] pssdata = readFileToListOfLines("datain/"+pid+"-pss.txt");
-					Peer p = e[i].call().initPeerWithData(ip,pid,loadfromfile,firstip,psssleepinterval,
+					p = e[i].call().initPeerWithData(ip,pid,loadfromfile,firstip,psssleepinterval,
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
-					peers.put(ip, p);
-					System.out.println("Added peer "+pid+" ip "+ip);
-					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
-					//Writing data for Fake Load Balancer
-					peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
 				}
 				else{
-					Peer p = e[i].call().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
+					p = e[i].call().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
 						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
 						testingviewonly,activeinterval,replychance,smart);
-					peers.put(ip, p);
-					if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
-					//Writing data for Fake Load Balancer
-					peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
 				}
+				peers.put(ip, p);
+				if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
+				//Writing data for Fake Load Balancer
+				peerlist = peerlist + p.getIP() + " " + Peer.port + " " + p.getID() + " " + p.getPOS() +" ";
 				entrylist.put(ip, e[i]);
 				boot.addIP(ip,pid,npos);
 				
@@ -229,6 +225,7 @@ public class MainSimulation {
 					list.add(ip);
 					idealconfig.put(ideal_group_for_peer, list);
 				}
+				System.out.print(".");
 			}
 			//Writing data for Fake Load Balancer
 			PrintWriter out = new PrintWriter(peerlistfile);
@@ -242,7 +239,7 @@ public class MainSimulation {
 			// TIMEADVANCER
 			Host timehost = world.createHost();
 			Process timeproc = timehost.createProcess();
-			Entry<TimeAdvancer> time = timeproc.createEntry(utilities.TimeAdvancer.class,utilities.TimeAdvancerImpl.class.getName());
+			Entry<TimeAdvancer> time = timeproc.createEntry(simulation.TimeAdvancer.class,simulation.TimeAdvancerImpl.class.getName());
 			time.call().initTimeAdvancer();
 			String[] timeargs = new String[2];
 			timeargs[0] = new Long(timeinterval).toString();
@@ -564,7 +561,7 @@ public class MainSimulation {
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB run at "+runtime+" s");
-			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbRUN.txt",
+			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","client.YCSBGlue","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=8000","-p", "stratus.id=ycsbRun","-P", "workloads/workloadb");
 			
@@ -608,7 +605,7 @@ public class MainSimulation {
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB load at "+initload+" s");
-			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","ycsbglue.StratusClient","-p","exportfile=ycsbLOAD.txt",
+			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","client.YCSBGlue","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p",
 					"stratus.port=9000","-p", "stratus.id=ycsbload","-P", "workloads/workloadb");
 			
