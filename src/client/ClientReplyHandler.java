@@ -31,7 +31,6 @@ import org.apache.log4j.Logger;
 
 public class ClientReplyHandler implements Runnable {
 
-	
 	private boolean running = true;
 	private DatagramSocket ss;
 	private Logger log;
@@ -40,14 +39,16 @@ public class ClientReplyHandler implements Runnable {
 	private HashMap<String,byte[]> getReplies;
 	private HashMap<Long,Set<Long>> putReplies;
 	private int putreps;
+	private long waitTimeout;
 	
-	public ClientReplyHandler(String ip,int port,int nputreps,Logger log){
+	public ClientReplyHandler(String ip,int port,int nputreps,long waittimeout,Logger log){
 		this.myIp=ip;
 		this.myPort=port;
 		this.log = log;
 		this.getReplies = new HashMap<String,byte[]>();
 		this.putReplies = new HashMap<Long,Set<Long>>();
 		this.putreps = nputreps;
+		this.waitTimeout = waittimeout;
 		try{
 			this.ss = new DatagramSocket(myPort,InetAddress.getByName(myIp));;
 		} catch (IOException e) {
@@ -69,21 +70,21 @@ public class ClientReplyHandler implements Runnable {
 	public byte[] waitForGet(String req_id){
 		byte[] res = null;
 		synchronized(this.getReplies){
-			//this.getReplies.put(req_id, "null".getBytes() );
 			byte[] valuebytes = null;
 			String value = "null";
-			while(value.equals("null")){
-				try {
-					this.getReplies.wait();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				valuebytes = this.getReplies.get(req_id);
-				value = new String(valuebytes);
+			try {
+				this.getReplies.wait(this.waitTimeout);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-			res = valuebytes;
-			//Cleaning table:
-			this.getReplies.remove(req_id);
+			
+			valuebytes = this.getReplies.get(req_id);
+			value = new String(valuebytes);
+			if(!value.equals("null")){
+				res = valuebytes;
+				//Cleaning table:
+				this.getReplies.remove(req_id);
+			}
 		}
 		return res;
 	}
@@ -103,13 +104,9 @@ public class ClientReplyHandler implements Runnable {
 		Set<Long> res = null;
 		synchronized(this.putReplies){
 			Set<Long> repliers = this.putReplies.get(key);
-			//if(repliers==null){
-			//	repliers = new TreeSet<Long>();
-			//	this.putReplies.put(key,repliers);
-			//}
 			while(repliers.size()<this.putreps){
 				try {
-					this.putReplies.wait();
+					this.putReplies.wait(this.waitTimeout);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

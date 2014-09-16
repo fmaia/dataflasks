@@ -44,7 +44,7 @@ public class Client implements PLAPI {
 	
 	private DatagramSocket sendersocket;
 	
-	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,Logger log){
+	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,long waittimeout,Logger log){
 		this.log = log;
 		this.myip = ip;
 		this.myport = port;
@@ -57,7 +57,7 @@ public class Client implements PLAPI {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.handler = new ClientReplyHandler(ip, port,nputreps,log);
+		this.handler = new ClientReplyHandler(ip, port,nputreps,waittimeout,log);
 		new Thread(handler).start();
 		log.info("Client STARTED. IP:"+myip+" PORT:"+myport);
 	}
@@ -109,34 +109,34 @@ public class Client implements PLAPI {
 
 	@Override
 	public synchronized Set<Long> put(long key, byte[] data) {
-		PeerData p = this.lb.getRandomPeer();
 		this.handler.registerPut(key);
-		int res = this.sendput(p, key, data);
-		if(res==0){ //success
-			this.log.debug("PUT to "+p.getID()+" KEY "+key+" WAITING FOR REPLY");
-			return this.handler.waitForPut(key);
+		Set<Long> res = null;
+		while(res==null){ //success
+			PeerData p = this.lb.getRandomPeer();
+			int status = this.sendput(p, key, data);
+			if(status==0){
+				this.log.debug("PUT to "+p.getID()+" KEY "+key+" WAITING FOR REPLY");
+				res = this.handler.waitForPut(key);
+			}
 		}
-		else{
-			this.log.debug("PUT FAILED");
-			return null;
-		}
+		return res;
 	}
 
 	@Override
 	public synchronized byte[] get(long nodeID, long key) {
-		PeerData p = this.lb.getRandomPeer();
 		Long req_id = this.getRequestcount();
 		String thisreq = this.myip+":"+this.myport + req_id.toString();
 		this.handler.registerGet(thisreq);
-		int res = this.sendget(p,key,thisreq);
-		if(res==0){
-			this.log.debug("GET to "+p.getID()+" KEY "+key+" REQID "+thisreq+" WAITING FOR REPLY");
-			return this.handler.waitForGet(thisreq);
+		byte[] res = null;
+		while(res==null){
+			PeerData p = this.lb.getRandomPeer();
+			int status = this.sendget(p,key,thisreq);
+			if(status==0){
+				this.log.debug("GET to "+p.getID()+" KEY "+key+" REQID "+thisreq+" WAITING FOR REPLY");
+				res = this.handler.waitForGet(thisreq);
+			}
 		}
-		else{
-			this.log.debug("GET FAILED");
-			return null;
-		}
+		return res;
 	}
 
 	@Override

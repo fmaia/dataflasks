@@ -15,12 +15,9 @@ See the License for the specific language governing permissions and limitations 
 */
 package client;
 
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Random;
@@ -37,13 +34,12 @@ import com.yahoo.ycsb.ByteIterator;
 import com.yahoo.ycsb.DB;
 import com.yahoo.ycsb.DBException;
 
-import common.PeerData;
 import core.Peer;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import loadbalancing.FakeLoadBalancer;
+import loadbalancing.RandomLoadBalancer;
 import loadbalancing.LoadBalancer;
 
 
@@ -95,6 +91,7 @@ public class YCSBGlue extends DB {
 		String myIp = ycsbProps.getProperty("stratus.ip");
 		int myPort = Integer.parseInt(ycsbProps.getProperty("stratus.port"));
 		String myID = ycsbProps.getProperty("stratus.id");
+		Long waittimeout = Long.parseLong(ycsbProps.getProperty("stratus.timeout"));
 		myPort = getNewPort(myPort);
 		
 		String myself = myIp+':'+new Integer(myPort).toString();
@@ -113,46 +110,16 @@ public class YCSBGlue extends DB {
 		log.addAppender(capp);
 		
 		log.debug("YCSBGlue STARTED IP:"+myIp+" PORT:"+myPort);
-		ArrayList<PeerData> peers = new ArrayList<PeerData>();
 		
-		//File where all nodes are described - used for fake load balancer
-		String peerlistfile = "peerlist.properties";
-		log.debug("Going to read peerlist.");
-		BufferedReader f;
-		try {
-			f = new BufferedReader(new FileReader(peerlistfile));
-			log.debug("Going to read peerlist - readline");
-			String peerslisting = f.readLine();
-			log.debug("Peerlist read:"+peerslisting);
-			f.close();
-
-			String[] plist = peerslisting.split(" ");
-			int size = plist.length;
-			for (int i=0;i<size;i=i+4){
-				String ip = plist[i];
-				//int port = Integer.parseInt(plist[i+1]);
-				Long pid = Long.parseLong(plist[i+2]);
-				double position = Double.parseDouble(plist[i+3]);
-				PeerData tmp = new PeerData(ip,0,0,0,position,pid);
-				peers.add(tmp);
-				//log.debug("READPEER - "+pid + " PEERSSIZE "+peers.size());
-			}
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		//Starting the peer sampling service
-		lb = new FakeLoadBalancer(peers,log, new Random());
+		//Starting load balancer
+		lb = new RandomLoadBalancer(log, new Random());
 		
 		//For now the number of replies needed is one and it is hardcoded
 		int nputreplies = 1;
 		//The Client will always have the id 0 - req id is distinguished by PORT
 		int senderport = getNewSenderPort(Peer.outclientport);
 		System.out.println("Initializing YCSBGlue. Port:"+myPort+" senderPort:"+senderport);
-		client = new Client(new Long(0).toString(),lb,myIp,myPort,senderport,nputreplies,log);
+		client = new Client(new Long(0).toString(),lb,myIp,myPort,senderport,nputreplies,waittimeout,log);
 		log.debug("YCSBGlue started.");
 	}
 	
@@ -188,16 +155,31 @@ public class YCSBGlue extends DB {
 		ByteIterator vl = arg2.get(column);
 		String value = column+";"+new String(vl.toArray());
 		log.debug("YCSB put request.");
-		this.client.put(key, value.getBytes());
+		Set<Long> res = null;
+		while(res==null){
+			log.debug("Issuing put operation...");
+			res = this.client.put(key, value.getBytes());
+			if(res==null){
+				log.debug("put operation failed... retrying");
+			}
+		}
 		arg2.get("");
 		return 0;
 	}
 
 	@Override
 	public int read(String arg0, String arg1, Set<String> arg2, HashMap<String, ByteIterator> arg3) {
-		long key = this.hash(arg0+arg1);
+		//FIX ME - abs function below is for test purposes only. Linked with fix me from kvstore sliceforkey method
+		long key = Math.abs(this.hash(arg0+arg1));
 		log.debug("YCSB read request.");
-		byte[] res = this.client.get(this.getReqId(), key);
+		byte[] res =null;
+		while(res==null){
+			log.debug("Issuing get operation...");
+			res = this.client.get(this.getReqId(), key);
+			if(res==null){
+				log.debug("get operation failed... retrying");
+			}
+		}
 		String vl = new String(res);
 		String[] vls = vl.split(";");
 		ByteIterator value = new ByteArrayByteIterator(vls[1].getBytes());
