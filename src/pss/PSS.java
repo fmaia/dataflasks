@@ -264,9 +264,17 @@ public class PSS extends Thread{
 				log.info("PSS local message recieved.");
 			}
 			else{
-				this.incorporateToGlobal(pmsg);
-				this.groupc.receiveMessage(pmsg.list);;
-				log.info("PSS global message received.");
+				if(pmsg.type==TYPE.LOADBALANCE){
+					log.info("Load Balancer Request received.");
+					ArrayList<PeerData> currentview = this.getView();
+					PSSMessage torespond = new PSSMessage(currentview,PSSMessage.TYPE.LOADBALANCE,this.ip);
+					this.sendLBMsg(pmsg.sender, torespond);
+				}
+				else{
+					this.incorporateToGlobal(pmsg);
+					this.groupc.receiveMessage(pmsg.list);;
+					log.info("PSS global message received.");
+				}
 			}
 			log.info("PSS message processed.");
 		}
@@ -282,13 +290,30 @@ public class PSS extends Thread{
 			
 			byte[] toSend = psg.encodeMessage();
 			this.log.debug("pss message size = "+toSend.length);
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), this.port);
-			this.log.debug("sending message to "+p.getIp()+":"+this.port);
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()),  this.port);
+			this.log.debug("sending message to "+p.getIp()+":"+ this.port);
 			sendersocket.send(packet);	
-			this.log.debug("message sent to "+p.getIp()+":"+this.port+" Message:"+ packet.toString());
+			this.log.debug("message sent to "+p.getIp()+":"+ this.port+" Message:"+ packet.toString());
 			return 0;
 		} catch (IOException e) {
-			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+this.port);
+			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+ this.port);
+			//e.printStackTrace();
+		}
+		return 1;
+	}
+	
+	private synchronized int sendLBMsg(String target, PSSMessage psg){
+		try {
+			
+			byte[] toSend = psg.encodeMessage();
+			this.log.debug("pss message size = "+toSend.length);
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(target),Peer.lbport);
+			this.log.debug("sending message to "+target+":"+Peer.lbport);
+			sendersocket.send(packet);	
+			this.log.debug("message sent to "+target+":"+Peer.lbport+" Message:"+ packet.toString());
+			return 0;
+		} catch (IOException e) {
+			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + target+":"+Peer.lbport);
 			//e.printStackTrace();
 		}
 		return 1;

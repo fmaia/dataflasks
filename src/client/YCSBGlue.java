@@ -39,7 +39,8 @@ import core.Peer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import loadbalancing.RandomLoadBalancer;
+import loadbalancing.DynamicLoadBalancer;
+import loadbalancing.LBPassiveThread;
 import loadbalancing.LoadBalancer;
 
 
@@ -92,6 +93,8 @@ public class YCSBGlue extends DB {
 		int myPort = Integer.parseInt(ycsbProps.getProperty("stratus.port"));
 		String myID = ycsbProps.getProperty("stratus.id");
 		Long waittimeout = Long.parseLong(ycsbProps.getProperty("stratus.timeout"));
+		Long lbinterval = Long.parseLong(ycsbProps.getProperty("stratus.lbinterval"));
+		String bootip = ycsbProps.getProperty("stratus.bootip");
 		myPort = getNewPort(myPort);
 		
 		String myself = myIp+':'+new Integer(myPort).toString();
@@ -112,7 +115,9 @@ public class YCSBGlue extends DB {
 		log.debug("YCSBGlue STARTED IP:"+myIp+" PORT:"+myPort);
 		
 		//Starting load balancer
-		lb = new RandomLoadBalancer(log, new Random());
+		lb = new DynamicLoadBalancer(log, new Random(),bootip,myIp,lbinterval);
+		new Thread(new LBPassiveThread((DynamicLoadBalancer) lb,myIp,log)).start();
+		new Thread((Runnable) lb).start();
 		
 		//For now the number of replies needed is one and it is hardcoded
 		int nputreplies = 1;

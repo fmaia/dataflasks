@@ -36,6 +36,7 @@ public class PSSMessage {
 		public static final int GLOBAL = 0;
 		public static final int LOCAL = 1;
 		public static final int RESPONSE = 2;
+		public static final int LOADBALANCE = 3;
 		
 	}
 	

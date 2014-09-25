@@ -110,10 +110,6 @@ public class AntiEntropy implements Runnable{
 						time = time + this.interval;
 						this.log.info("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
-						//int localsize = myneighbors.size();
-						//if(localsize > 0){
-						//	PeerData toContact = myneighbors.get(grandom.nextInt(localsize));
-						//	log.debug(time+" to contact:"+toContact.getID());
 						for(PeerData toContact : myneighbors){
 							//Contact Peer in order to check if there are missing objects
 							HashSet<Long> mykeys = this.store.getKeys();

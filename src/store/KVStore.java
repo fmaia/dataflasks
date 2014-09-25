@@ -36,6 +36,7 @@ public class KVStore {
 	//public Logger log;
 	private HashMap<Long,Boolean> seen;
 	private HashMap<String,Boolean> requestlog;
+	private HashMap<String,Boolean> antientropylog;
 	
 
 	
@@ -44,6 +45,7 @@ public class KVStore {
 		this.mystore = new HashMap<Long,byte[]>();
 		this.seen = new HashMap<Long,Boolean>();
 		this.requestlog = new HashMap<String,Boolean>();
+		this.antientropylog = new HashMap<String,Boolean>();
 		this.nslices = 0;
 		this.slice = 0;
 	}
@@ -52,6 +54,7 @@ public class KVStore {
 		this.mystore = new HashMap<Long,byte[]>();
 		this.seen = new HashMap<Long,Boolean>();
 		this.requestlog = new HashMap<String,Boolean>();
+		this.antientropylog = new HashMap<String,Boolean>();
 		this.nslices = 0;
 		this.slice = 0;
 	}
@@ -226,6 +229,23 @@ public class KVStore {
 
 	public synchronized void setNslices(int nslices) {
 		this.nslices = nslices;
+	}
+	
+	
+	//Anti-entropy log management
+	
+	public synchronized void aeLog(String key){
+		this.antientropylog.put(key, true);
+	}
+	
+	public synchronized boolean aeIsInLog(String req){
+		Boolean b = this.antientropylog.get(req);
+		if(b==null){
+			return false;
+		}
+		else{
+			return b;
+		}
 	}
 	
 }

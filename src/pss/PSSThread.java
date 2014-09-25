@@ -25,6 +25,7 @@ import java.util.concurrent.Executors;
 
 import org.apache.log4j.Logger;
 
+import pt.minha.models.global.Debug;
 import core.Peer;
 
 
@@ -48,7 +49,13 @@ public class PSSThread extends Thread {
 			e1.printStackTrace();
 		}
 		this.log.info("PSSThread before executor.");
+		try{
 		this.exService = Executors.newFixedThreadPool(1);
+		}
+		catch(Throwable e){
+			Debug.println(e.getMessage());
+			e.printStackTrace();
+		}
 		this.log.info("PSSThread after executor.");
 		try {
 			this.ss = new DatagramSocket(Peer.pssport,InetAddress.getByName(ip));
@@ -68,8 +75,10 @@ public class PSSThread extends Thread {
 		public PSSWorker(byte[] p, PSS pss,Logger log){
 			this.p = p;
 			this.pss = pss;
-			this.log = log;
+			this.log = log;	
+		
 		}
+		
 		public void run(){
 			PSSMessage msg;
 			try {

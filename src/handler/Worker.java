@@ -34,6 +34,15 @@ import core.Peer;
 
 public class Worker implements Runnable {
 	
+	
+	private static long aeReqCount = 0L;
+	
+	public static synchronized long getAeReqCount() {
+		aeReqCount = aeReqCount + 1;
+		return aeReqCount;
+	}
+
+
 	private Logger log;
 	private KVStore store;
 	private PSS view;
@@ -98,7 +107,7 @@ public class Worker implements Runnable {
 	private int sendget(String targetip, Long key, String ip, int port){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
-			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,"intern",this.myid);
+			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,"intern"+this.myid+getAeReqCount(),this.myid);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
 			socket.send(packet);
 			this.log.info("Anti entropy get sent.");
@@ -183,7 +192,7 @@ public class Worker implements Runnable {
 			byte[] temp = null;
 			//Check if this is a duplicate request
 			this.log.debug("GET: "+this.store.inLog(requestid));
-			if(!this.store.inLog(requestid) && !requestid.equals("intern")){
+			if(!this.store.inLog(requestid) && !requestid.startsWith("intern")){
 				this.store.logreq(requestid);
 				temp = this.store.get(requestedkey);
 				if(temp!=null){
@@ -227,21 +236,24 @@ public class Worker implements Runnable {
 			}
 			else{
 				//Special internal get for anti-entropy
-				if(requestid.equals("intern")){
+				if(requestid.startsWith("intern")){
 					this.log.info("PassiveThread Received Anti-Entropy reply.");
-					temp = this.store.get(requestedkey);
-					if(temp!=null){
-						//Send value to Client
-						Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,this.myid);
-						this.replyClient(replymsg);
-						this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
-						//Already replied to Client so no need to forward the request
-					}
-					else{
-						//Do not hold the value - need to forward the request.
-						this.log.info("ANTI ENTROPY GET RECEIVED BUT HOST DOES NOT HOLD VALUE FORWARDING. req_id:"+requestid);
-						ArrayList<PeerData> myview = this.view.getView();
-						this.forwardMessage(myview);
+					if(!this.store.aeIsInLog(requestid)){ //Check if this request was already seen by the peer. In that case, ignore it.
+						this.store.aeLog(requestid);
+						temp = this.store.get(requestedkey);
+						if(temp!=null){
+							//Send value to Client
+							Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,this.myid);
+							this.replyClient(replymsg);
+							this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
+							//Already replied to Client so no need to forward the request
+						}
+						else{
+							//Do not hold the value - need to forward the request.
+							this.log.info("ANTI ENTROPY GET RECEIVED BUT HOST DOES NOT HOLD VALUE FORWARDING. req_id:"+requestid);
+							ArrayList<PeerData> myview = this.view.getView();
+							this.forwardMessage(myview);
+						}
 					}
 				}
 			}
@@ -263,14 +275,10 @@ public class Worker implements Runnable {
 					}
 				}
 			}
-			//PeerData toContact = this.view.getRandomPeerFromLocalView();
-			//if(toContact!=null){
-				//Ask for objects I do not hold.
 			this.log.info("Anti entropy - going to ask for keys to "+this.msg.id+" keystoRequest:"+toRequest.size());
 			for (Long k : toRequest){
 				sendget(this.msg.ip,k,this.myip,Peer.port);
 			}
-			//}
 			break;
 		case 10:
 			//Reply to Exchange Gets

@@ -30,14 +30,14 @@ public class Message {
 	public long id;
 	public HashSet<Long> keys;
 	
-	public Message(int type, String ip, int port,long id){
+	public Message(int type, String ip, int port,long id,String reqid){
 		this.messagetype = type;
 		this.id = id;
 		this.ip = ip;
 		this.port = port;
 		this.key = 0;
 		this.value = null;
-		this.reqid = "-1";
+		this.reqid = reqid;
 	}
 	
 	public Message(int type, String ip, int port,long id, HashSet<Long> keys){
