@@ -38,7 +38,7 @@ public class SnapshotWriter {
 			pw.write(this.flasks);
 			pw.flush();
 			pw.close();
-			//System.out.println("Snapshot of data created in "+path);
+			System.out.println("Snapshot of data created in "+path);
 		} catch (FileNotFoundException e) {
 			System.err.println("Error in snapshot creation: "+path);
 			e.printStackTrace();
