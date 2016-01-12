@@ -15,233 +15,31 @@ See the License for the specific language governing permissions and limitations 
 */
 package store;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
 
-import common.DFLogger;
+public interface KVStore {
 
-/*
- * Currently using global lock.
- * TODO: Consider optimizing this.
- */
-
-public class KVStore {
-
-	
-	private HashMap<StoreKey,byte[]> mystore;
-	private int slice;
-	private int nslices;
-	//public Logger log;
-	private HashMap<StoreKey,Boolean> seen;
-	private HashMap<String,Boolean> requestlog;
-	private HashMap<String,Boolean> antientropylog;
-	
-
-	
-	public KVStore(DFLogger log){
-		//this.log = log;
-		this.mystore = new HashMap<StoreKey,byte[]>();
-		this.seen = new HashMap<StoreKey,Boolean>();
-		this.requestlog = new HashMap<String,Boolean>();
-		this.antientropylog = new HashMap<String,Boolean>();
-		this.nslices = 0;
-		this.slice = 0;
-	}
-	
-	public KVStore(){
-		this.mystore = new HashMap<StoreKey,byte[]>();
-		this.seen = new HashMap<StoreKey,Boolean>();
-		this.requestlog = new HashMap<String,Boolean>();
-		this.antientropylog = new HashMap<String,Boolean>();
-		this.nslices = 0;
-		this.slice = 0;
-	}
-	
-	@Override
-	public String toString(){
-		String s = this.slice + "\n" + this.nslices + "\n";
-		Set<StoreKey> skeys = this.mystore.keySet();
-		s = s + skeys.size() + "\n";
-		Iterator<StoreKey> storedkeys = skeys.iterator();
-		while(storedkeys.hasNext()){
-			StoreKey skey = storedkeys.next();
-			s = s + skey.key + "\n" + skey.version + "\n" + this.mystore.get(skey) + "\n";
-		}
-		s = s + this.seen.size();
-		for(StoreKey lo : this.seen.keySet()){
-			s = s + "\n" + lo.key + "\n" + lo.version + "\n" + seen.get(lo);
-		}
-		s = s + "\n";
-		return s;
-	}
-	
-	
-	public void readFromString(String[] data){
-		String[] lines = data;
-		if(lines.length!=0){
-			this.slice = Integer.parseInt(lines[0]);
-			this.nslices = Integer.parseInt(lines[1]);
-			int siz = Integer.parseInt(lines[2]);
-			int i = 3;
-			for(int j=0;j<siz;j++){
-				Long k = Long.parseLong(lines[i]);
-				Long version = Long.parseLong(lines[i+1]);
-				byte[] v = lines[i+2].getBytes();
-				this.mystore.put(new StoreKey(k,version),v);
-				i = i + 2;
-			}
-			siz = Integer.parseInt(lines[i]);
-			i = i + 1;
-			for(int j=0;j<siz;j++){
-				Long ls = Long.parseLong(lines[i]);
-				Long lsversion = Long.parseLong(lines[i+1]);
-				Boolean bs = Boolean.parseBoolean(lines[i+2]);
-				this.seen.put(new StoreKey(ls,lsversion), bs);
-				i = i + 2;
-			}
-			
-		}
-		else{
-			System.err.println("KVSTORE ERROR reading data from String.");
-		}
-	}
-	
-	public int getSliceForKey(long key){
-		//FIX ME - currently compatible with positive long only
-		long min = 0;//Long.MIN_VALUE;
-        long max = Long.MAX_VALUE;
-        long step = max/this.nslices; ///2);
-        long current = min;
-        int res = 0;
-        while(key>current){
-                current = current + step;
-                res = res + 1;
-        }
-        //Correct possible error because how min and max count the 0 value
-        if(res>this.nslices){
-                res = this.nslices;
-        }
-        return res;
-	}
-	
+	public String toString();
+	public void readFromString(String[] data);	
+	public int getSliceForKey(long key);
 	//Use only outside simulation! - it is not synchronized
-	public StoreKey[] getStoredKeys(){
-		StoreKey[] tmp = this.mystore.keySet().toArray(new StoreKey[0]);
-		return tmp;
-	}
+	public StoreKey[] getStoredKeys();
 	//------------------------------------------------------
-	
-	public synchronized void updatePartition(int p, int np){
-		if(np!=this.nslices){
-			this.nslices = np;
-			this.slice = p;
-			//clear memory to allow new keys to be stored has the slice has changed
-			for(StoreKey lk : this.seen.keySet()){
-				if(!this.mystore.containsKey(lk)){
-					this.seen.put(lk, false);
-				}
-			}
-		}
-	}
-	
-	public synchronized HashSet<StoreKey> getKeys(){
-		HashSet<StoreKey> keys = new HashSet<StoreKey>();
-		for(StoreKey l : mystore.keySet()){
-			keys.add(l);
-		}
-		return keys;
-	}
-	
-	public synchronized boolean haveseen(Long key, Long version){
-		StoreKey rec = new StoreKey(key, version);
-		Boolean b = this.seen.get(rec);
-		if(b==null){
-			return false;
-		}
-		else{
-			return b;
-		}
-	}
-	
-	public synchronized void seenit(Long key, Long version){
-		StoreKey rec = new StoreKey(key, version);
-		this.seen.put(rec, true);
-	}
-	
-	public synchronized boolean inLog(String key){
-		Boolean b = this.requestlog.get(key);
-		if(b==null){
-			//this.requestlog.put(key, true);
-			return false;
-		}
-		else{
-			return true;
-		}
-	}
-	
-	public synchronized void logreq(String key){
-		this.requestlog.put(key, true);
-	}
-	
-	public synchronized boolean put(long key, long version, byte[] data) {
-		StoreKey rec = new StoreKey(key, version);
-		this.seenit(key, version);
-		int sslice = this.getSliceForKey(key);
-		if(this.slice==sslice){
-			this.mystore.put(rec, data);
-			return true;
-		}
-		else{
-			//log.debug("Object received but does not belong in this Store. ("+key+","+data.toString()+")");
-			return false;
-		}
-	}
-
-	public synchronized byte[] get(StoreKey key) {
-		byte[] value = this.mystore.get(key);
-		return value;
-	}
-
-	public synchronized byte[] delete(long key) {
-		byte[] value = this.mystore.remove(key);
-		return value;
-	}
-
-
-	
-	public synchronized int getSlice() {
-		return slice;
-	}
-
-	public synchronized void setSlice(int slice) {
-		this.slice = slice;
-	}
-
-	public synchronized int getNslices() {
-		return nslices;
-	}
-
-	public synchronized void setNslices(int nslices) {
-		this.nslices = nslices;
-	}
-	
-	
+	public void updatePartition(int p, int np);
+	public HashSet<StoreKey> getKeys();
+	public boolean haveseen(Long key, Long version);
+	public void seenit(Long key, Long version);
+	public boolean inLog(String key);
+	public void logreq(String key);
+	public boolean put(long key, long version, byte[] data);
+	public byte[] get(StoreKey key);
+	public byte[] delete(long key);
+	public int getSlice();
+	public void setSlice(int slice);
+	public int getNslices();
+	public void setNslices(int nslices);
 	//Anti-entropy log management
-	
-	public synchronized void aeLog(String key){
-		this.antientropylog.put(key, true);
-	}
-	
-	public synchronized boolean aeIsInLog(String req){
-		Boolean b = this.antientropylog.get(req);
-		if(b==null){
-			return false;
-		}
-		else{
-			return b;
-		}
-	}
+	public void aeLog(String key);
+	public boolean aeIsInLog(String req);
 	
 }

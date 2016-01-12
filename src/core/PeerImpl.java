@@ -24,6 +24,8 @@ import common.DFLogger;
 import pss.PSS;
 import pss.PSSThread;
 import store.KVStore;
+import store.KVStoreFileSystem;
+import store.KVStoreMemory;
 import store.StoreKey;
 
 public class PeerImpl implements Peer {
@@ -36,6 +38,7 @@ public class PeerImpl implements Peer {
 	private double position;
 	private boolean loadfromfile;
 	private String bootip;
+	private String storetype;
 	
 	private DFLogger log;
 	private String loglevel;
@@ -77,7 +80,7 @@ public class PeerImpl implements Peer {
 	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
 				int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
-				boolean testingviewonly,long activeinterval,float replychance,boolean smart) {
+				boolean testingviewonly,long activeinterval,float replychance,boolean smart, String datastoretype) {
 		this.ip = ip;
 		this.id = id;
 		this.position = position;
@@ -97,6 +100,7 @@ public class PeerImpl implements Peer {
 		this.smart = smart;
 		this.myself = new Long(id).toString();
 		this.loglevel = loglevel;
+		this.storetype = datastoretype;
 		return this;
 	}
 	
@@ -104,7 +108,7 @@ public class PeerImpl implements Peer {
 	public Peer initPeerWithData(String ip,long id,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long pssboottime, int pssviewsize, int repmax, 
 				int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
-				boolean testingviewonly,long activeinterval,float replychance,boolean smart,String[] storedata,String[] groupdata,String[] pssdata) {
+				boolean testingviewonly,long activeinterval,float replychance,boolean smart,String[] storedata,String[] groupdata,String[] pssdata,String datastoretype) {
 		
 		this.ip = ip;
 		this.id = id;
@@ -124,8 +128,13 @@ public class PeerImpl implements Peer {
 		this.smart = smart;
 		this.myself = new Long(id).toString();
 		this.loglevel = loglevel;
-		
-		this.store = new KVStore();
+		this.storetype = datastoretype;
+		if(datastoretype.equals("disk")){
+			this.store = new KVStoreFileSystem();
+		}
+		else{
+			this.store = new KVStoreMemory();
+		}
 		this.store.readFromString(storedata);
 		this.flasks = new GroupConstruction(this.store);
 		this.flasks.readFromString(groupdata);
@@ -160,7 +169,12 @@ public class PeerImpl implements Peer {
 			}
 			else{
 				this.log.info("Initializing Store, PSS and Group Construction from scratch.");
-				this.store = new KVStore(this.log);
+				if(this.storetype.equals("disk")){
+					this.store = new KVStoreFileSystem(this.log);
+				}
+				else{
+					this.store = new KVStoreMemory(this.log);
+				}
 				this.log.info("Initializing PSS and Group Construction from scratch.");
 				this.flasks = new GroupConstruction(this.ip,this.id,this.position,
 						this.repmin,this.repmax,this.maxage,this.localmessage,

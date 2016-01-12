@@ -40,12 +40,12 @@ public interface Peer {
 	public Peer initPeer(String ip,long id,double position,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
-			boolean testingviewonly,long activeinterval,float replychance,boolean smart);
+			boolean testingviewonly,long activeinterval,float replychance,boolean smart,String datastoretype);
 	public Peer initPeerWithData(String ip,long id,boolean loadfromfile,String bootip, 
 			long psssleepinterval, long boottime, int pssviewsize, int repmax, 
 			int repmin, int maxage, boolean localmessage, int localinterval,String loglevel,
 			boolean testingviewonly,long activeinterval,float replychance,boolean smart,
-				String[] storedata,String[] groupdata,String[] pssdata);
+				String[] storedata,String[] groupdata,String[] pssdata,String datastoretype);
 	public long getID();
 	public String getIP();
 	public double getPOS();

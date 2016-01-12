@@ -61,6 +61,7 @@ public class MainSimulation {
 	private static Bootstrapper boot;
 	
 	//Peer Configs
+	private static String datastoretype;
 	private static int viewsize;
 	private static int number_of_peers;
 	private static boolean loadfromfile;
@@ -118,6 +119,7 @@ public class MainSimulation {
 			loglevel = prop.getProperty("loglevel");
 			//DATA SNAPSHOT
 			long snapshottime = Long.parseLong(prop.getProperty("snapshot"));
+			datastoretype = prop.getProperty("datastore");
 			//ACTIVE THREADS
 			testingviewonly = Boolean.parseBoolean(prop.getProperty("testingviewonly"));
 			activeinterval = (Long.parseLong(prop.getProperty("activeinterval")))*1000L;
@@ -200,12 +202,12 @@ public class MainSimulation {
 					String[] pssdata = readFileToListOfLines("datain/"+pid+"-pss.txt");
 					p = e[i].call().initPeerWithData(ip,pid,loadfromfile,firstip,psssleepinterval,
 							pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
-							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata);
+							testingviewonly,activeinterval,replychance,smart,storedata,groupdata,pssdata,datastoretype);
 				}
 				else{
 					p = e[i].call().initPeer(ip,pid,npos,loadfromfile,firstip,psssleepinterval,
 						pssboottime,viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
-						testingviewonly,activeinterval,replychance,smart);
+						testingviewonly,activeinterval,replychance,smart,datastoretype);
 				}
 				peers.put(ip, p);
 				if (loglevel.equals("debug")) System.out.println("Got Peer "+p.getID());
@@ -434,7 +436,7 @@ public class MainSimulation {
 		Entry<Peer> newpeer = newproc.createEntry(core.Peer.class,core.PeerImpl.class.getName());
 		Peer newpeerref = newpeer.call().initPeer(ip, id, position,false,firstip,psssleepinterval,
 				new Random().nextInt(3000),viewsize,repmax,repmin,maxage,localmessage,localinterval,loglevel,
-				testingviewonly,activeinterval,replychance,smart);
+				testingviewonly,activeinterval,replychance,smart,datastoretype);
 		
 		entrylist.put(ip, newpeer);
 		peers.put(ip, newpeerref);
