@@ -96,7 +96,7 @@ public class YCSBGlue extends DB {
 		
 		//String myself = myIp+':'+new Integer(myPort).toString();
 		
-		log = new DFLogger("ycsbglue."+myIp);
+		log = new DFLogger("ycsbglue."+myIp,"debug");
 		
 		log.debug("YCSBGlue STARTED IP:"+myIp+" PORT:"+myPort);
 		

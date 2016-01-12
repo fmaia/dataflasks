@@ -174,7 +174,7 @@ public class BootstrapperImpl implements Bootstrapper {
 		
 		//Configuring Log ------------------------------------------------------------
 		String myself = new Long(this.id).toString();
-		log = new DFLogger("peer."+myself);
+		log = new DFLogger("peer."+myself,"debug");
 		//Configuring Log ------------------------------------------------------------
 	
 		

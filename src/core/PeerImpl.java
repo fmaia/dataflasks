@@ -38,6 +38,7 @@ public class PeerImpl implements Peer {
 	private String bootip;
 	
 	private DFLogger log;
+	private String loglevel;
 	
 	private KVStore store;
 	private GroupConstruction flasks;
@@ -95,7 +96,7 @@ public class PeerImpl implements Peer {
 		this.replychance = replychance;
 		this.smart = smart;
 		this.myself = new Long(id).toString();
-		
+		this.loglevel = loglevel;
 		return this;
 	}
 	
@@ -122,6 +123,7 @@ public class PeerImpl implements Peer {
 		this.replychance = replychance;
 		this.smart = smart;
 		this.myself = new Long(id).toString();
+		this.loglevel = loglevel;
 		
 		this.store = new KVStore();
 		this.store.readFromString(storedata);
@@ -143,7 +145,7 @@ public class PeerImpl implements Peer {
 		
 		try{
 			//SET LOG 
-			this.log = new DFLogger("peer."+myself);
+			this.log = new DFLogger("peer."+myself,this.loglevel);
 			this.log.info("Initialized "+myself+" with position;"+this.position);
 			long wait = 1000;
 			//START STORE + PSS + GROUP CONSTRUCTION
