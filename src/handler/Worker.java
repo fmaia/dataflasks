@@ -26,9 +26,10 @@ import java.util.Random;
 
 import pss.PSS;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import store.KVStore;
+import store.StoreKey;
 import common.PeerData;
 import core.Peer;
 
@@ -43,7 +44,7 @@ public class Worker implements Runnable {
 	}
 
 
-	private Logger log;
+	private DFLogger log;
 	private KVStore store;
 	private PSS view;
 	private Long myid;
@@ -55,7 +56,7 @@ public class Worker implements Runnable {
 	private SenderSocketHandler sockethandler;
 	
 	public Worker(String ip,Long id,KVStore store, PSS view, float chance,
-			boolean smart,Logger log, Random rnd, Message msg, SenderSocketHandler sockethandler){
+			boolean smart,DFLogger log, Random rnd, Message msg, SenderSocketHandler sockethandler){
 		this.log = log;
 		this.store = store;
 		this.view = view;
@@ -79,7 +80,7 @@ public class Worker implements Runnable {
 				byte[] toSend = this.msg.encodeMessage();
 				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 				socket.send(packet);		
-				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY:"+this.msg.key+ " REQID"+this.msg.reqid+ " reqISSUER:"+this.msg.id);
+				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY: "+this.msg.key+ " REQID: "+this.msg.reqid+ " reqISSUER: "+this.msg.id);
 				this.sockethandler.returnSocket(socket);
 				
 			} catch (IOException e) {
@@ -104,10 +105,10 @@ public class Worker implements Runnable {
 	}
 	
 	
-	private int sendget(String targetip, Long key, String ip, int port){
+	private int sendget(String targetip, Long key, Long version, String ip, int port){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
-			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,"intern"+this.myid+getAeReqCount(),this.myid);
+			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,version,"intern"+this.myid+getAeReqCount(),this.myid);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
 			socket.send(packet);
 			this.log.info("Anti entropy get sent.");
@@ -130,17 +131,18 @@ public class Worker implements Runnable {
 			//PUT operation
 			this.log.info("Received Put Operation in Worker thread. key:value -> "+ this.msg.key + " : "+ this.msg.value );
 			long key = this.msg.key;
+			long version = this.msg.version;
 			byte[] value = this.msg.value;
 			//Storing value if it should be stored
-			if(!this.store.haveseen(key)){
-				boolean stored = this.store.put(key, value);
+			if(!this.store.haveseen(key,version)){
+				boolean stored = this.store.put(key, version, value);
 				if(stored){
 					log.info("Stored key:"+key);
 					float achance = this.rnd.nextFloat();
 					ArrayList<PeerData> myview = this.view.getSliceLocalView();
 					if(achance<=this.chance){
 						//if this node stored the value should reply the client signaling such operation
-						Message replymsg = new Message(11,this.myip,Peer.port,null,null,key,this.myid);
+						Message replymsg = new Message(11,this.myip,Peer.port,null,null,key,version,this.myid);
 						this.replyClient(replymsg);
 						//forwarding the request to other peers IN MY SLICE if it is a new obj.
 						this.log.info("stored and tried to reply to client "+ip+":"+port+" key "+key);
@@ -189,17 +191,18 @@ public class Worker implements Runnable {
 			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key);
 			String requestid = this.msg.reqid;
 			long requestedkey = this.msg.key;
+			long requestedversion = this.msg.version;
 			byte[] temp = null;
 			//Check if this is a duplicate request
 			this.log.debug("GET: "+this.store.inLog(requestid));
 			if(!this.store.inLog(requestid) && !requestid.startsWith("intern")){
 				this.store.logreq(requestid);
-				temp = this.store.get(requestedkey);
+				temp = this.store.get(new StoreKey(requestedkey,requestedversion));
 				if(temp!=null){
 					//Send value to Client
 					float achance = this.rnd.nextFloat();
 					if(achance<=this.chance){
-						Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,this.myid);
+						Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 						this.replyClient(replymsg);
 						this.log.debug("GET RECEIVED AND REPLIED req_id:"+requestid);
 						//Already replied to Client so no need to forward the request
@@ -240,10 +243,10 @@ public class Worker implements Runnable {
 					this.log.info("PassiveThread Received Anti-Entropy reply.");
 					if(!this.store.aeIsInLog(requestid)){ //Check if this request was already seen by the peer. In that case, ignore it.
 						this.store.aeLog(requestid);
-						temp = this.store.get(requestedkey);
+						temp = this.store.get(new StoreKey(requestedkey,requestedversion));
 						if(temp!=null){
 							//Send value to Client
-							Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,this.myid);
+							Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 							this.replyClient(replymsg);
 							this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
 							//Already replied to Client so no need to forward the request
@@ -261,29 +264,29 @@ public class Worker implements Runnable {
 		case 4:
 			//Exchange Operation
 			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msg.keys.size()+" keys.");
-			HashSet<Long> mykeys = this.store.getKeys();
-			HashSet<Long> toRequest = new HashSet<Long>();
+			HashSet<StoreKey> mykeys = this.store.getKeys();
+			HashSet<StoreKey> toRequest = new HashSet<StoreKey>();
 			if(mykeys.isEmpty()){
-				for(Long l : msg.keys){
+				for(StoreKey l : msg.keys){
 					toRequest.add(l);
 				}
 			}
 			else{
-				for(Long l : msg.keys){
+				for(StoreKey l : msg.keys){
 					if(!mykeys.contains(l)){
 						toRequest.add(l);
 					}
 				}
 			}
 			this.log.info("Anti entropy - going to ask for keys to "+this.msg.id+" keystoRequest:"+toRequest.size());
-			for (Long k : toRequest){
-				sendget(this.msg.ip,k,this.myip,Peer.port);
+			for (StoreKey k : toRequest){
+				sendget(this.msg.ip,k.key,k.version,this.myip,Peer.port);
 			}
 			break;
 		case 10:
 			//Reply to Exchange Gets
 			this.log.info("Value with key:"+msg.key+" received in antiEntropy mechanism");
-			this.store.put(msg.key, msg.value);
+			this.store.put(msg.key, msg.version, msg.value);
 
 			break;
 			

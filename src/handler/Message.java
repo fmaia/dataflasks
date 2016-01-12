@@ -18,6 +18,8 @@ package handler;
 import java.io.*;
 import java.util.HashSet;
 
+import store.StoreKey;
+
 
 public class Message {
 
@@ -25,10 +27,11 @@ public class Message {
 	public String ip;
 	public int port;
 	public long key;
+	public long version;
 	public byte[] value;
 	public String reqid;
 	public long id;
-	public HashSet<Long> keys;
+	public HashSet<StoreKey> keys;
 	
 	public Message(int type, String ip, int port,long id,String reqid){
 		this.messagetype = type;
@@ -36,27 +39,30 @@ public class Message {
 		this.ip = ip;
 		this.port = port;
 		this.key = 0;
+		this.version = 0;
 		this.value = null;
 		this.reqid = reqid;
 	}
 	
-	public Message(int type, String ip, int port,long id, HashSet<Long> keys){
+	public Message(int type, String ip, int port,long id, HashSet<StoreKey> keys){
 		this.messagetype = type;
 		this.id = id;
 		this.ip = ip;
 		this.port = port;
 		this.key = 0;
+		this.version = 0;
 		this.value = null;
 		this.reqid = "-1";
 		this.keys = keys;
 	}
 	
-	public Message(int type, String ip, int port,byte[] value,String reqid,Long key,long id){
+	public Message(int type, String ip, int port,byte[] value,String reqid,Long key,Long version, long id){
 		this.messagetype = type;
 		this.id = id;
 		this.ip = ip;
 		this.port = port;
 		this.key = key;
+		this.version = version;
 		this.value = value;
 		this.reqid = reqid;
 	}
@@ -81,6 +87,7 @@ public class Message {
 			case 2:
 				//PUT Operation
 				this.key = dis.readLong();
+				this.version = dis.readLong();
 				int valuesize = dis.readInt();
 				this.value = new byte[valuesize];
 				dis.read(value, 0, valuesize);
@@ -88,20 +95,23 @@ public class Message {
 			case 3:
 				//GET Operation
 				this.key = dis.readLong();
+				this.version = dis.readLong();
 				this.reqid = dis.readUTF();
 				break;
 			case 4:
 				//Exchange Operation
 				int keynumber = dis.readInt();
-				this.keys = new HashSet<Long>();
+				this.keys = new HashSet<StoreKey>();
 				while(keynumber>0){
-					this.keys.add(dis.readLong());
+					StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
+					this.keys.add(tmp);
 					keynumber=keynumber -1;
 				}
 				break;
 			case 10:
 				//GET reply
 				this.key = dis.readLong();
+				this.version = dis.readLong();
 				this.reqid = dis.readUTF();
 				int nvaluesize = dis.readInt();
 				this.value = new byte[nvaluesize];
@@ -111,7 +121,7 @@ public class Message {
 			case 11:
 				//PUT reply
 				this.key = dis.readLong();
-		
+				this.version = dis.readLong();
 				break;
 			case 23:
 				//Shutdown Thread
@@ -145,6 +155,7 @@ public class Message {
 				out.writeUTF(ip);
 				out.writeInt(port);
 				out.writeLong(key);
+				out.writeLong(version);
 
 				out.writeInt(value.length);
 				out.write(value);
@@ -160,6 +171,7 @@ public class Message {
 				out.writeUTF(ip);
 				out.writeInt(port);
 				out.writeLong(key);
+				out.writeLong(version);
 				
 				out.writeUTF(reqid);
 
@@ -174,8 +186,9 @@ public class Message {
 				out.writeUTF(ip);
 				out.writeInt(port);
 				out.writeInt(keys.size());
-				for(Long k : keys){
-					out.writeLong(k);
+				for(StoreKey k : keys){
+					out.writeLong(k.key);
+					out.writeLong(k.version);
 				}
 				out.flush();
 				res = baos.toByteArray();
@@ -188,6 +201,7 @@ public class Message {
 				out.writeUTF(ip);
 				out.writeInt(port);
 				out.writeLong(key);
+				out.writeLong(version);
 				out.writeUTF(reqid);
 				out.writeInt(value.length);
 				out.write(value);
@@ -203,6 +217,7 @@ public class Message {
 				out.writeUTF(ip);
 				out.writeInt(port);
 				out.writeLong(key);
+				out.writeLong(version);
 				
 				out.flush();
 				res = baos.toByteArray();
@@ -228,7 +243,7 @@ public class Message {
 		return res;
 	}
 	
-	public static byte[] encodeMessageGet(String ip,int port,long key,String reqid,long id){
+	public static byte[] encodeMessageGet(String ip,int port,long key,long version,String reqid,long id){
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
@@ -238,6 +253,7 @@ public class Message {
 			out.writeUTF(ip);
 			out.writeInt(port);
 			out.writeLong(key);
+			out.writeLong(version);
 			
 			out.writeUTF(reqid);
 			
@@ -252,7 +268,7 @@ public class Message {
 		return res;
 	}
 	
-	public static byte[] encodeMessagePut(String ip,int port,long key,byte[] value, long id){
+	public static byte[] encodeMessagePut(String ip,int port,long key,long version,byte[] value, long id){
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
@@ -262,6 +278,7 @@ public class Message {
 			out.writeUTF(ip);
 			out.writeInt(port);
 			out.writeLong(key);
+			out.writeLong(version);
 			
 			out.writeInt(value.length);
 			out.write(value);
@@ -280,7 +297,7 @@ public class Message {
 	@Override
 	public String toString(){
 		String res = "Message of type:";
-		res = res+messagetype+" ip:"+ip+" port:"+port+" key:"+key+" value:"+value+" requestID:"+reqid+"\n";
+		res = res+messagetype+" ip:"+ip+" port:"+port+" key:"+key+" version: "+version+" value:"+value+" requestID:"+reqid+"\n";
 		return res;
 	}
 }

@@ -16,18 +16,12 @@ See the License for the specific language governing permissions and limitations 
 package client;
 
 
-import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
 import java.util.Vector;
-
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
 
 import com.yahoo.ycsb.ByteArrayByteIterator;
 import com.yahoo.ycsb.ByteIterator;
@@ -39,9 +33,12 @@ import core.Peer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import common.DFLogger;
+
 import loadbalancing.DynamicLoadBalancer;
 import loadbalancing.LBPassiveThread;
 import loadbalancing.LoadBalancer;
+//import loadbalancing.RandomLoadBalancer;
 
 
 public class YCSBGlue extends DB {
@@ -52,7 +49,7 @@ public class YCSBGlue extends DB {
 	private LoadBalancer lb;
 	private Client client;
 	private long reqcount = 0;
-	private Logger log;
+	private DFLogger log;
 	
 	private long getReqId(){
 		this.reqcount++;
@@ -91,30 +88,20 @@ public class YCSBGlue extends DB {
 		
 		String myIp = ycsbProps.getProperty("stratus.ip");
 		int myPort = Integer.parseInt(ycsbProps.getProperty("stratus.port"));
-		String myID = ycsbProps.getProperty("stratus.id");
+		//String myID = ycsbProps.getProperty("stratus.id");
 		Long waittimeout = Long.parseLong(ycsbProps.getProperty("stratus.timeout"));
 		Long lbinterval = Long.parseLong(ycsbProps.getProperty("stratus.lbinterval"));
 		String bootip = ycsbProps.getProperty("stratus.bootip");
 		myPort = getNewPort(myPort);
 		
-		String myself = myIp+':'+new Integer(myPort).toString();
+		//String myself = myIp+':'+new Integer(myPort).toString();
 		
-		log = Logger.getLogger(myself);
-		//Configuring Log
-		log.setLevel(Level.DEBUG);
-		FileAppender capp = null;
-		try {
-			capp = new FileAppender(new PatternLayout("%d{HH:mm:ss,SSS} %r [%t] %-5p %c %x - %m%n"),"logs/"+myIp+myPort+myID+".txt");
-		} catch (IOException e1) {
-			
-			e1.printStackTrace();
-		}
-		capp.setName(myself);
-		log.addAppender(capp);
+		log = new DFLogger("ycsbglue."+myIp);
 		
 		log.debug("YCSBGlue STARTED IP:"+myIp+" PORT:"+myPort);
 		
 		//Starting load balancer
+		//lb = new RandomLoadBalancer(log,new Random());
 		lb = new DynamicLoadBalancer(log, new Random(),bootip,myIp,lbinterval);
 		new Thread(new LBPassiveThread((DynamicLoadBalancer) lb,myIp,log)).start();
 		new Thread((Runnable) lb).start();
@@ -154,6 +141,7 @@ public class YCSBGlue extends DB {
 	@Override
 	public int insert(String arg0, String arg1, HashMap<String, ByteIterator> arg2) {
 		//FIX ME - abs function below is for test purposes only. Linked with fix me from kvstore sliceforkey method
+		//FIX ME - version is being ignored!
 		long key = Math.abs(this.hash(arg0+arg1));
 		String[] keyset = arg2.keySet().toArray(new String[1]);
 		String column = keyset[0];
@@ -163,7 +151,7 @@ public class YCSBGlue extends DB {
 		Set<Long> res = null;
 		while(res==null){
 			log.debug("Issuing put operation...");
-			res = this.client.put(key, value.getBytes());
+			res = this.client.put(key,key, value.getBytes());
 			if(res==null){
 				log.debug("put operation failed... retrying");
 			}
@@ -175,12 +163,13 @@ public class YCSBGlue extends DB {
 	@Override
 	public int read(String arg0, String arg1, Set<String> arg2, HashMap<String, ByteIterator> arg3) {
 		//FIX ME - abs function below is for test purposes only. Linked with fix me from kvstore sliceforkey method
+		//FIX ME - version is being ignored!
 		long key = Math.abs(this.hash(arg0+arg1));
 		log.debug("YCSB read request.");
 		byte[] res =null;
 		while(res==null){
 			log.debug("Issuing get operation...");
-			res = this.client.get(this.getReqId(), key);
+			res = this.client.get(this.getReqId(), key,key);
 			if(res==null){
 				log.debug("get operation failed... retrying");
 			}

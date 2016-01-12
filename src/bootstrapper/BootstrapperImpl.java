@@ -28,10 +28,7 @@ import java.util.HashSet;
 import java.util.Random;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
+import common.DFLogger;
 
 import core.Peer;
 
@@ -39,7 +36,7 @@ import core.Peer;
 
 public class BootstrapperImpl implements Bootstrapper {
 
-	private Logger log;
+	private DFLogger log;
 	private ServerSocket ss;
 	private boolean running;
 	private HashSet<String> aliveIPs;
@@ -133,11 +130,11 @@ public class BootstrapperImpl implements Bootstrapper {
 	
 	private class BootWorker extends Thread{
 		private Socket s;
-		private Logger log;
+		private DFLogger log;
 		private ArrayList<String> tosend;
 		private BootstrapperImpl parent;
 		
-		public BootWorker(Socket p, Logger log,BootstrapperImpl parent){
+		public BootWorker(Socket p, DFLogger log,BootstrapperImpl parent){
 			this.s = p;
 			this.log = log;
 			this.tosend = parent.pollFila();
@@ -177,17 +174,7 @@ public class BootstrapperImpl implements Bootstrapper {
 		
 		//Configuring Log ------------------------------------------------------------
 		String myself = new Long(this.id).toString();
-		log = Logger.getLogger(myself);
-		log.setLevel(Level.DEBUG);
-		FileAppender capp = null;
-		try {
-			capp = new FileAppender(new PatternLayout("[%t] %-5p %c %x - %m%n"),"logs/"+myself+".txt");
-		} catch (IOException e1) {
-			
-			e1.printStackTrace();
-		}
-		capp.setName(myself);
-		log.addAppender(capp);
+		log = new DFLogger("peer."+myself);
 		//Configuring Log ------------------------------------------------------------
 	
 		

@@ -22,17 +22,17 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import common.PeerData;
 
 public class RandomLoadBalancer implements LoadBalancer {
 
 	private ArrayList<PeerData> allnodes;
-	private Logger log;
+	private DFLogger log;
 	private Random rnd;
 
-	public RandomLoadBalancer(Logger log, Random rnd){
+	public RandomLoadBalancer(DFLogger log, Random rnd){
 		this.allnodes= new ArrayList<PeerData>();
 		
 		//File where all nodes are described - used for fake load balancer

@@ -22,7 +22,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import common.PeerData;
 
@@ -56,7 +56,7 @@ public class PSSMessage {
 		}
 	}
 	
-	public PSSMessage(byte[] packet, Logger log){
+	public PSSMessage(byte[] packet, DFLogger log){
 		log.debug("PSSMessage constructor. Going to read DataPacket.");
 		try{
 		DataInputStream dis = new DataInputStream(new ByteArrayInputStream(packet));

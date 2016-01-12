@@ -17,17 +17,17 @@ package loadbalancing;
 
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import common.PeerData;
 
 public class RoundRobinLoadBalancer implements LoadBalancer {
 
 	private ArrayList<PeerData> allnodes;
-	private Logger log;
+	private DFLogger log;
 	private int pos;
 
-	public RoundRobinLoadBalancer(ArrayList<PeerData> total,Logger log){
+	public RoundRobinLoadBalancer(ArrayList<PeerData> total,DFLogger log){
 		this.allnodes = total;
 		this.log = log;
 		this.log.debug("RoundRobinLoadBalancer initialized.");

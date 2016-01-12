@@ -26,7 +26,7 @@ import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pss.PSSMessage;
 import pss.PSSMessage.TYPE;
@@ -36,14 +36,14 @@ import core.Peer;
 public class DynamicLoadBalancer implements LoadBalancer, Runnable {
 
 	private ArrayList<PeerData> allnodes;
-	private Logger log;
+	private DFLogger log;
 	private Random rnd;
 	private boolean running;
 	private long interval;
 	private DatagramSocket sendersocket;
 	private String ip;
 
-	public DynamicLoadBalancer(Logger log, Random rnd,String bootip, String ip, long interval){
+	public DynamicLoadBalancer(DFLogger log, Random rnd,String bootip, String ip, long interval){
 		this.allnodes= new ArrayList<PeerData>();
 		this.log = log;
 		this.rnd = rnd;

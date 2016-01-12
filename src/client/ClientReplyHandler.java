@@ -23,17 +23,18 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
 
+import common.DFLogger;
 
 import handler.Message;
 
-import org.apache.log4j.Logger;
+
 
 
 public class ClientReplyHandler implements Runnable {
 
 	private boolean running = true;
 	private DatagramSocket ss;
-	private Logger log;
+	private DFLogger log;
 	private int myPort;
 	private String myIp;
 	private HashMap<String,byte[]> getReplies;
@@ -41,7 +42,7 @@ public class ClientReplyHandler implements Runnable {
 	private int putreps;
 	private long waitTimeout;
 	
-	public ClientReplyHandler(String ip,int port,int nputreps,long waittimeout,Logger log){
+	public ClientReplyHandler(String ip,int port,int nputreps,long waittimeout,DFLogger log){
 		this.myIp=ip;
 		this.myPort=port;
 		this.log = log;

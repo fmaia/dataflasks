@@ -23,7 +23,7 @@ import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pt.minha.models.global.Debug;
 import core.Peer;
@@ -32,14 +32,14 @@ import core.Peer;
 
 public class PSSThread extends Thread {
 	
-	public Logger log;
+	public DFLogger log;
 	private DatagramSocket ss;
 	private boolean running;
 	private PSS pss;
 	
 	private ExecutorService exService;
 	
-	public PSSThread(PSS pss,String ip,Logger log,long wait){
+	public PSSThread(PSS pss,String ip,DFLogger log,long wait){
 		this.pss = pss;
 		this.log = log;
 		try {
@@ -69,10 +69,10 @@ public class PSSThread extends Thread {
 	
 	private class PSSWorker extends Thread{
 		private byte[] p;
-		private Logger log;
+		private DFLogger log;
 		private PSS pss;
 		
-		public PSSWorker(byte[] p, PSS pss,Logger log){
+		public PSSWorker(byte[] p, PSS pss,DFLogger log){
 			this.p = p;
 			this.pss = pss;
 			this.log = log;	
@@ -95,7 +95,7 @@ public class PSSThread extends Thread {
 	public void stopThread(){
 		this.running = false;
 		//this.ss.close();
-		this.log.info("PSSThread stopped.");
+		//this.log.info("PSSThread stopped.");
 	}
 	//-----------------
 	

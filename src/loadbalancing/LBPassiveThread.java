@@ -20,7 +20,9 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import org.apache.log4j.Logger;
+
+
+import common.DFLogger;
 
 import pss.PSSMessage;
 import core.Peer;
@@ -29,13 +31,13 @@ import core.Peer;
 
 public class LBPassiveThread extends Thread {
 	
-	public Logger log;
+	public DFLogger log;
 	private DatagramSocket ss;
 	private boolean running;
 	private DynamicLoadBalancer dlb;
 
 	
-	public LBPassiveThread(DynamicLoadBalancer dlb,String ip,Logger log){
+	public LBPassiveThread(DynamicLoadBalancer dlb,String ip,DFLogger log){
 		this.dlb = dlb;
 		this.log = log;
 		try {

@@ -5,7 +5,7 @@ import java.net.SocketException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import client.YCSBGlue;
 import core.Peer;
@@ -28,7 +28,7 @@ public class SenderSocketHandler {
 		return res;
 	}
 	
-	public SenderSocketHandler(int n, Logger log){
+	public SenderSocketHandler(int n, DFLogger log){
 		log.info("before creating queue");
 		this.available = new LinkedBlockingQueue<DatagramSocket>(n);
 		for(int i=0;i<n;i++){

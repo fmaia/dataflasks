@@ -32,6 +32,7 @@ import pt.minha.api.Main;
 import pt.minha.api.World;
 import pt.minha.api.sim.Simulation;
 import pt.minha.api.Process;
+import store.StoreKey;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -503,7 +504,7 @@ public class MainSimulation {
 		try {
 			fstream = new FileWriter("logs/groups/"+(now/1000000000)+".txt");
 			BufferedWriter fout = new BufferedWriter(fstream);
-			HashMap<Long,Integer> storedKeys = new HashMap<Long,Integer>();
+			HashMap<StoreKey,Integer> storedKeys = new HashMap<StoreKey,Integer>();
 			
 			HashMap<Long,String> toprint = new HashMap<Long,String>();
 			
@@ -524,8 +525,8 @@ public class MainSimulation {
 			
 			if(keyset){
 				for(Peer pi : peers.values()){
-					Long [] tmp = pi.getStoredKeys();
-					for (Long l : tmp){
+					StoreKey[] tmp = pi.getStoredKeys();
+					for (StoreKey l : tmp){
 						Integer ti = storedKeys.get(l);
 						if(ti==null){
 							storedKeys.put(l,1);
@@ -538,9 +539,9 @@ public class MainSimulation {
 				//writing keyset to disk for offline processing
 				fstream = new FileWriter("logs/keyset/"+(now/1000000000)+".txt");
 				fout = new BufferedWriter(fstream);
-				List<Long> longkeys = new ArrayList<Long>(storedKeys.keySet());
+				List<StoreKey> longkeys = new ArrayList<StoreKey>(storedKeys.keySet());
 				Collections.sort(longkeys);
-				for(Long chave :longkeys){
+				for(StoreKey chave :longkeys){
 					fout.write(chave+" "+storedKeys.get(chave)+"\n");
 				}
 				fout.close();

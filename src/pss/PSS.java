@@ -29,7 +29,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pss.PSSMessage.TYPE;
 import common.PeerData;
@@ -43,7 +43,7 @@ public class PSS extends Thread{
 	private HashMap<Integer,ArrayList<PeerData>> peersForSlice;
 	private ArrayList<PeerData> sentPeerData;
 	
-	public Logger log;
+	public DFLogger log;
 	private Random grandom;
 	private String ip;
 	private int port;
@@ -61,7 +61,7 @@ public class PSS extends Thread{
 	private GroupConstruction groupc;
 	
 	
-	public PSS(String toContact, String ip,long id,long sleep,long boottime, int viewsize,Logger log, GroupConstruction groupC){
+	public PSS(String toContact, String ip,long id,long sleep,long boottime, int viewsize,DFLogger log, GroupConstruction groupC){
 	
 	
 		this.groupc = groupC;
@@ -199,7 +199,7 @@ public class PSS extends Thread{
 		this.groupc.stop();
 		//this.sendersocket.close();
 		this.running = false;
-		this.log.info("PSS stopped.");
+		//this.log.info("PSS stopped.");
 	}
 	
 	//----------------------------

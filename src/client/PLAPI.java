@@ -20,7 +20,7 @@ import java.util.Set;
 
 public interface PLAPI {
 
-    public Set<Long> put (long key,byte[] data);
+    public Set<Long> put (long key,long version, byte[] data);
     //returns a set of NodeIDs that stored the object.
 
     
@@ -29,8 +29,8 @@ public interface PLAPI {
     //TODO: To be added.
     
     
-    public byte[] get(long nodeID,long key);
+    public byte[] get(long nodeID,long version, long key);
 
-    public byte[] delete(long nodeID,long key);
+    public byte[] delete(long nodeID, long version, long key);
 
 }

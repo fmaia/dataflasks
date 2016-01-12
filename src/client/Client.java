@@ -23,11 +23,10 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Set;
 
+import common.DFLogger;
+
 import loadbalancing.LoadBalancer;
 import handler.Message;
-
-import org.apache.log4j.Logger;
-
 import common.PeerData;
 import core.Peer;
 
@@ -36,7 +35,7 @@ public class Client implements PLAPI {
 
 	private String myip;
 	private int myport;
-	private Logger log;
+	private DFLogger log;
 	private LoadBalancer lb;
 	private Long requestcount;
 	private ClientReplyHandler handler;
@@ -44,7 +43,7 @@ public class Client implements PLAPI {
 	
 	private DatagramSocket sendersocket;
 	
-	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,long waittimeout,Logger log){
+	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,long waittimeout,DFLogger log){
 		this.log = log;
 		this.myip = ip;
 		this.myport = port;
@@ -67,10 +66,10 @@ public class Client implements PLAPI {
 		this.handler.stop();
 	}
 	
-	private synchronized int sendput(PeerData p, Long key, byte[] value){
+	private synchronized int sendput(PeerData p, Long key,Long version, byte[] value){
 
 		try { 
-			byte[] toSend = Message.encodeMessagePut(this.myip,this.myport,key,value,Long.parseLong(myid));
+			byte[] toSend = Message.encodeMessagePut(this.myip,this.myport,key,version,value,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			this.sendersocket.send(packet);		
 			return 0;
@@ -82,9 +81,9 @@ public class Client implements PLAPI {
 	} 
 	
 	
-	private synchronized int sendget(PeerData p, Long key, String requestid){
+	private synchronized int sendget(PeerData p, Long key, Long version, String requestid){
 		try {
-			byte[] toSend = Message.encodeMessageGet(this.myip,this.myport,key,requestid,Long.parseLong(myid));
+			byte[] toSend = Message.encodeMessageGet(this.myip,this.myport,key,version, requestid,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			this.sendersocket.send(packet);		
 			return 0;
@@ -108,12 +107,12 @@ public class Client implements PLAPI {
 
 
 	@Override
-	public synchronized Set<Long> put(long key, byte[] data) {
+	public synchronized Set<Long> put(long key, long version, byte[] data) {
 		this.handler.registerPut(key);
 		Set<Long> res = null;
 		while(res==null){ //success
 			PeerData p = this.lb.getRandomPeer();
-			int status = this.sendput(p, key, data);
+			int status = this.sendput(p, key, version, data);
 			if(status==0){
 				this.log.debug("PUT to "+p.getID()+" KEY "+key+" WAITING FOR REPLY");
 				res = this.handler.waitForPut(key);
@@ -123,14 +122,14 @@ public class Client implements PLAPI {
 	}
 
 	@Override
-	public synchronized byte[] get(long nodeID, long key) {
+	public synchronized byte[] get(long nodeID, long key, long version) {
 		Long req_id = this.getRequestcount();
 		String thisreq = this.myip+":"+this.myport + req_id.toString();
 		this.handler.registerGet(thisreq);
 		byte[] res = null;
 		while(res==null){
 			PeerData p = this.lb.getRandomPeer();
-			int status = this.sendget(p,key,thisreq);
+			int status = this.sendget(p,key,version, thisreq);
 			if(status==0){
 				this.log.debug("GET to "+p.getID()+" KEY "+key+" REQID "+thisreq+" WAITING FOR REPLY");
 				res = this.handler.waitForGet(thisreq);
@@ -140,7 +139,7 @@ public class Client implements PLAPI {
 	}
 
 	@Override
-	public synchronized byte[] delete(long nodeID, long key) {
+	public synchronized byte[] delete(long nodeID, long key, long version) {
 		// TODO Auto-generated method stub
 		return null;
 	}

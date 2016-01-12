@@ -22,7 +22,7 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pss.PSSMessage;
 import pss.PSSMessage.TYPE;
@@ -46,7 +46,7 @@ public class GroupConstruction {
 	private boolean local;
 	private int localinterval;
 	private KVStore store;
-	public Logger log;
+	public DFLogger log;
 	
 	private DatagramSocket sendersocket;
 	
@@ -106,7 +106,7 @@ public class GroupConstruction {
 	//----------------------------------------------------------------------------------
 	
 	public GroupConstruction(String ip,long id,double position, int replicationfactorMin,
-			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, Logger log){
+			int replicationfactorMax, int maxage, boolean local,int localinterval,KVStore thestore, DFLogger log){
 		this.firstmessage = false;
 		this.id = id;
 		this.position = position;

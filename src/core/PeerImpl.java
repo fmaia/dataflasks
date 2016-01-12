@@ -18,17 +18,13 @@ package core;
 import handler.AntiEntropy;
 import handler.PassiveThread;
 
-import java.io.IOException;
 import java.util.Random;
 
-import org.apache.log4j.FileAppender;
-import org.apache.log4j.Level;
-import org.apache.log4j.Logger;
-import org.apache.log4j.PatternLayout;
-
+import common.DFLogger;
 import pss.PSS;
 import pss.PSSThread;
 import store.KVStore;
+import store.StoreKey;
 
 public class PeerImpl implements Peer {
 
@@ -41,8 +37,7 @@ public class PeerImpl implements Peer {
 	private boolean loadfromfile;
 	private String bootip;
 	
-	private Logger log;
-	private String loglevel;
+	private DFLogger log;
 	
 	private KVStore store;
 	private GroupConstruction flasks;
@@ -95,7 +90,6 @@ public class PeerImpl implements Peer {
 		this.pssSleepInterval = psssleepinterval;
 		this.pssboottime = pssboottime;
 		this.pssviewsize = pssviewsize;
-		this.loglevel = loglevel;
 		this.testingviewonly = testingviewonly;
 		this.activeinterval = activeinterval;
 		this.replychance = replychance;
@@ -123,7 +117,6 @@ public class PeerImpl implements Peer {
 		this.pssSleepInterval = psssleepinterval;
 		this.pssboottime = pssboottime;
 		this.pssviewsize = pssviewsize;
-		this.loglevel = loglevel;
 		this.testingviewonly = testingviewonly;
 		this.activeinterval = activeinterval;
 		this.replychance = replychance;
@@ -150,28 +143,7 @@ public class PeerImpl implements Peer {
 		
 		try{
 			//SET LOG 
-			this.log = Logger.getLogger(myself);
-			if(this.loglevel.equals("debug")){
-				this.log.setLevel(Level.DEBUG);
-			}
-			else{
-				if(this.loglevel.equals("off")){
-					this.log.setLevel(Level.OFF);
-				}
-				else{
-					this.log.setLevel(Level.INFO);
-				}
-			}
-			FileAppender capp = null;
-			try {
-				capp = new FileAppender(new PatternLayout("[%d] %-5p %c %x - %m%n"),"logs/"+myself+".txt");
-			} catch (IOException e1) {
-
-				e1.printStackTrace();
-			}
-			capp.setName(myself);
-			this.log.addAppender(capp);
-			
+			this.log = new DFLogger("peer."+myself);
 			this.log.info("Initialized "+myself+" with position;"+this.position);
 			long wait = 1000;
 			//START STORE + PSS + GROUP CONSTRUCTION
@@ -253,9 +225,9 @@ public class PeerImpl implements Peer {
 		if(!this.testingviewonly){
 			this.active.stop();
 			this.pass.stop();
-			this.log.info("Active and Passive threads stopped.");
+			//this.log.info("Active and Passive threads stopped.");
 		}
-		this.log.info("Peer Stopped.");
+		//this.log.info("Peer Stopped.");
 	}
 
 	@Override
@@ -264,8 +236,8 @@ public class PeerImpl implements Peer {
 	}
 
 	@Override
-	public Long[] getStoredKeys() {
-		Long[] list = this.store.getStoredKeys();
+	public StoreKey[] getStoredKeys() {
+		StoreKey[] list = this.store.getStoredKeys();
 		return list;
 	}
 

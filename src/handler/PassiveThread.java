@@ -24,7 +24,7 @@ import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pss.PSS;
 import store.KVStore;
@@ -33,7 +33,7 @@ public class PassiveThread implements Runnable {
 
 	private DatagramSocket ss;
 	private boolean running;
-	private Logger log;
+	private DFLogger log;
 	private KVStore store;
 	private PSS view;
 	private Long myid;
@@ -45,7 +45,7 @@ public class PassiveThread implements Runnable {
 	private ExecutorService exService;
 	private SenderSocketHandler sockethandler;
 	
-	public PassiveThread(Long id,KVStore store, PSS view,String ip,int port,float chance, boolean smart, Random rnd,Logger log,long wait){
+	public PassiveThread(Long id,KVStore store, PSS view,String ip,int port,float chance, boolean smart, Random rnd,DFLogger log,long wait){
 		this.running = true;
 		this.log = log;
 		this.store = store;

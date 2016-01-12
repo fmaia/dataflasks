@@ -20,7 +20,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 /*
  * Currently using global lock.
@@ -30,20 +30,20 @@ import org.apache.log4j.Logger;
 public class KVStore {
 
 	
-	private HashMap<Long,byte[]> mystore;
+	private HashMap<StoreKey,byte[]> mystore;
 	private int slice;
 	private int nslices;
 	//public Logger log;
-	private HashMap<Long,Boolean> seen;
+	private HashMap<StoreKey,Boolean> seen;
 	private HashMap<String,Boolean> requestlog;
 	private HashMap<String,Boolean> antientropylog;
 	
 
 	
-	public KVStore(Logger log){
+	public KVStore(DFLogger log){
 		//this.log = log;
-		this.mystore = new HashMap<Long,byte[]>();
-		this.seen = new HashMap<Long,Boolean>();
+		this.mystore = new HashMap<StoreKey,byte[]>();
+		this.seen = new HashMap<StoreKey,Boolean>();
 		this.requestlog = new HashMap<String,Boolean>();
 		this.antientropylog = new HashMap<String,Boolean>();
 		this.nslices = 0;
@@ -51,8 +51,8 @@ public class KVStore {
 	}
 	
 	public KVStore(){
-		this.mystore = new HashMap<Long,byte[]>();
-		this.seen = new HashMap<Long,Boolean>();
+		this.mystore = new HashMap<StoreKey,byte[]>();
+		this.seen = new HashMap<StoreKey,Boolean>();
 		this.requestlog = new HashMap<String,Boolean>();
 		this.antientropylog = new HashMap<String,Boolean>();
 		this.nslices = 0;
@@ -62,20 +62,21 @@ public class KVStore {
 	@Override
 	public String toString(){
 		String s = this.slice + "\n" + this.nslices + "\n";
-		Set<Long> skeys = this.mystore.keySet();
+		Set<StoreKey> skeys = this.mystore.keySet();
 		s = s + skeys.size() + "\n";
-		Iterator<Long> storedkeys = skeys.iterator();
+		Iterator<StoreKey> storedkeys = skeys.iterator();
 		while(storedkeys.hasNext()){
-			Long skey = storedkeys.next();
-			s = s + skey + "\n" + this.mystore.get(skey) + "\n";
+			StoreKey skey = storedkeys.next();
+			s = s + skey.key + "\n" + skey.version + "\n" + this.mystore.get(skey) + "\n";
 		}
 		s = s + this.seen.size();
-		for(Long lo : this.seen.keySet()){
-			s = s + "\n" + lo + "\n" + seen.get(lo);
+		for(StoreKey lo : this.seen.keySet()){
+			s = s + "\n" + lo.key + "\n" + lo.version + "\n" + seen.get(lo);
 		}
 		s = s + "\n";
 		return s;
 	}
+	
 	
 	public void readFromString(String[] data){
 		String[] lines = data;
@@ -86,16 +87,18 @@ public class KVStore {
 			int i = 3;
 			for(int j=0;j<siz;j++){
 				Long k = Long.parseLong(lines[i]);
-				byte[] v = lines[i+1].getBytes();
-				this.mystore.put(k,v);
+				Long version = Long.parseLong(lines[i+1]);
+				byte[] v = lines[i+2].getBytes();
+				this.mystore.put(new StoreKey(k,version),v);
 				i = i + 2;
 			}
 			siz = Integer.parseInt(lines[i]);
 			i = i + 1;
 			for(int j=0;j<siz;j++){
 				Long ls = Long.parseLong(lines[i]);
-				Boolean bs = Boolean.parseBoolean(lines[i+1]);
-				this.seen.put(ls, bs);
+				Long lsversion = Long.parseLong(lines[i+1]);
+				Boolean bs = Boolean.parseBoolean(lines[i+2]);
+				this.seen.put(new StoreKey(ls,lsversion), bs);
 				i = i + 2;
 			}
 			
@@ -124,8 +127,8 @@ public class KVStore {
 	}
 	
 	//Use only outside simulation! - it is not synchronized
-	public Long[] getStoredKeys(){
-		Long[] tmp = this.mystore.keySet().toArray(new Long[this.mystore.size()]);
+	public StoreKey[] getStoredKeys(){
+		StoreKey[] tmp = this.mystore.keySet().toArray(new StoreKey[0]);
 		return tmp;
 	}
 	//------------------------------------------------------
@@ -135,7 +138,7 @@ public class KVStore {
 			this.nslices = np;
 			this.slice = p;
 			//clear memory to allow new keys to be stored has the slice has changed
-			for(Long lk : this.seen.keySet()){
+			for(StoreKey lk : this.seen.keySet()){
 				if(!this.mystore.containsKey(lk)){
 					this.seen.put(lk, false);
 				}
@@ -143,16 +146,17 @@ public class KVStore {
 		}
 	}
 	
-	public synchronized HashSet<Long> getKeys(){
-		HashSet<Long> keys = new HashSet<Long>();
-		for(Long l : mystore.keySet()){
+	public synchronized HashSet<StoreKey> getKeys(){
+		HashSet<StoreKey> keys = new HashSet<StoreKey>();
+		for(StoreKey l : mystore.keySet()){
 			keys.add(l);
 		}
 		return keys;
 	}
 	
-	public synchronized boolean haveseen(Long key){
-		Boolean b = this.seen.get(key);
+	public synchronized boolean haveseen(Long key, Long version){
+		StoreKey rec = new StoreKey(key, version);
+		Boolean b = this.seen.get(rec);
 		if(b==null){
 			return false;
 		}
@@ -161,8 +165,9 @@ public class KVStore {
 		}
 	}
 	
-	public synchronized void seenit(Long key){
-		this.seen.put(key, true);
+	public synchronized void seenit(Long key, Long version){
+		StoreKey rec = new StoreKey(key, version);
+		this.seen.put(rec, true);
 	}
 	
 	public synchronized boolean inLog(String key){
@@ -180,21 +185,12 @@ public class KVStore {
 		this.requestlog.put(key, true);
 	}
 	
-	public synchronized boolean put(long key, byte[] data) {
-		this.seenit(key);
+	public synchronized boolean put(long key, long version, byte[] data) {
+		StoreKey rec = new StoreKey(key, version);
+		this.seenit(key, version);
 		int sslice = this.getSliceForKey(key);
 		if(this.slice==sslice){
-			this.mystore.put(key, data);
-			//log.debug("Object inserted into Store. ("+key+","+data.toString()+")");
-			//String storecontents = "STORECONTENTS [ ";
-			//Set<Long> skeys = mystore.keySet();
-			//Iterator<Long> storedkeys = skeys.iterator();
-			//while(storedkeys.hasNext()){
-			//	Long skey = storedkeys.next();
-			//	storecontents = storecontents + skey + " ";
-			//}
-			//storecontents = storecontents + "]";
-			//log.info(storecontents);
+			this.mystore.put(rec, data);
 			return true;
 		}
 		else{
@@ -203,7 +199,7 @@ public class KVStore {
 		}
 	}
 
-	public synchronized byte[] get(long key) {
+	public synchronized byte[] get(StoreKey key) {
 		byte[] value = this.mystore.get(key);
 		return value;
 	}

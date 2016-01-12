@@ -18,6 +18,7 @@ package core;
 
 
 import pt.minha.api.sim.Global;
+import store.StoreKey;
 
 
 @Global
@@ -50,7 +51,7 @@ public interface Peer {
 	public double getPOS();
 	public void stopPeer();
 	public String getPSSLog();
-	public Long[] getStoredKeys();
+	public StoreKey[] getStoredKeys();
 	public String getStoreSnap();
 	public String getPSSSnap();
 	public String getGroupConstructionSnap();

@@ -24,10 +24,11 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Random;
 
-import org.apache.log4j.Logger;
+import common.DFLogger;
 
 import pss.PSS;
 import store.KVStore;
+import store.StoreKey;
 import common.PeerData;
 import core.Peer;
 
@@ -39,7 +40,7 @@ public class AntiEntropy implements Runnable{
 	private long boottime;
 	private boolean running;
 	//private Random grandom;
-	private Logger log;
+	private DFLogger log;
 	private String myIp;
 	private int myPort;
 	private long myID;
@@ -48,10 +49,10 @@ public class AntiEntropy implements Runnable{
 	public void stop(){
 		//this.socketsender.close();
 		this.running = false;
-		this.log.info("Stopping Anti Entropy.");
+		//this.log.info("Stopping Anti Entropy.");
 	}
 	
-	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,long boottime,Random r,Logger log){
+	public AntiEntropy(String myIp,int myPort,long myID,PSS v,KVStore store,long interval,long boottime,Random r,DFLogger log){
 		this.running = true;
 		this.view =v;
 		//this.grandom = r;
@@ -74,7 +75,7 @@ public class AntiEntropy implements Runnable{
 	
 	
 	
-	private void sendPeerKeys(PeerData p,HashSet<Long> mykeys){
+	private void sendPeerKeys(PeerData p,HashSet<StoreKey> mykeys){
 		try{
 			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys).encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
@@ -112,7 +113,7 @@ public class AntiEntropy implements Runnable{
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
 						for(PeerData toContact : myneighbors){
 							//Contact Peer in order to check if there are missing objects
-							HashSet<Long> mykeys = this.store.getKeys();
+							HashSet<StoreKey> mykeys = this.store.getKeys();
 							this.sendPeerKeys(toContact,mykeys);
 							this.log.debug("Anti Entropy request sent to "+toContact.getID()+" with "+mykeys.size()+" keys at cycle "+cycle);
 						}
