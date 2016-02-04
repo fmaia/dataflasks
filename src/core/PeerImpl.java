@@ -23,6 +23,7 @@ import java.util.Random;
 import common.DFLogger;
 import pss.PSS;
 import pss.PSSThread;
+import store.KVDedupStoreFileSystem;
 import store.KVStore;
 import store.KVStoreFileSystem;
 import store.KVStoreMemory;
@@ -133,7 +134,12 @@ public class PeerImpl implements Peer {
 			this.store = new KVStoreFileSystem();
 		}
 		else{
-			this.store = new KVStoreMemory();
+			if(this.storetype.equals("dedup")){
+				this.store = new KVDedupStoreFileSystem();
+			}
+			else{
+				this.store = new KVStoreMemory();
+			}
 		}
 		this.store.readFromString(storedata);
 		this.flasks = new GroupConstruction(this.store);
@@ -155,7 +161,7 @@ public class PeerImpl implements Peer {
 		try{
 			//SET LOG 
 			this.log = new DFLogger("peer."+myself,this.loglevel);
-			this.log.info("Initialized "+myself+" with position;"+this.position);
+			this.log.info("Initialized "+myself+" with position;"+this.position+" with the IP:"+this.ip);
 			long wait = 1000;
 			//START STORE + PSS + GROUP CONSTRUCTION
 			if(this.loadfromfile){
@@ -173,7 +179,12 @@ public class PeerImpl implements Peer {
 					this.store = new KVStoreFileSystem(this.log);
 				}
 				else{
-					this.store = new KVStoreMemory(this.log);
+					if(this.storetype.equals("dedup")){
+						this.store = new KVDedupStoreFileSystem(this.log);
+					}
+					else{
+						this.store = new KVStoreMemory(this.log);
+					}
 				}
 				this.log.info("Initializing PSS and Group Construction from scratch.");
 				this.flasks = new GroupConstruction(this.ip,this.id,this.position,

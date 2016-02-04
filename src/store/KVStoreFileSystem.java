@@ -34,18 +34,18 @@ import common.DFLogger;
 
 public class KVStoreFileSystem implements KVStore{
 
-	private final String filename = "database";
-	private HashMap<StoreKey,StoreFile> mystore;
-	private int slice;
-	private int nslices;
+	protected final String filename = "database";
+	protected HashMap<StoreKey,StoreFile> mystore;
+	protected int slice;
+	protected int nslices;
 	//public Logger log;
-	private HashMap<StoreKey,Boolean> seen;
-	private HashMap<String,Boolean> requestlog;
-	private HashMap<String,Boolean> antientropylog;
+	protected HashMap<StoreKey,Boolean> seen;
+	protected HashMap<String,Boolean> requestlog;
+	protected HashMap<String,Boolean> antientropylog;
 	
 	//FileSystem Info
-	private int currentOffset;
-	private FileOutputStream f;
+	protected int currentOffset;
+	protected FileOutputStream f;
 	
 	public KVStoreFileSystem(DFLogger log){
 		//this.log = log;
