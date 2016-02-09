@@ -27,6 +27,7 @@ import store.KVDedupStoreFileSystem;
 import store.KVStore;
 import store.KVStoreFileSystem;
 import store.KVStoreMemory;
+import store.RabinExtractor;
 import store.StoreKey;
 
 public class PeerImpl implements Peer {
@@ -219,11 +220,11 @@ public class PeerImpl implements Peer {
 				tactive.join();
 				this.log.info("PEER FINISHED "+myself);
 			}
-
+			 
 		} catch (Exception e) {
 			this.log.error("ERROR in PeerMAIN. "+e.getMessage());
 		}
-
+		
 	}
 
 
