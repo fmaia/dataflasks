@@ -13,12 +13,13 @@ Resolving this issue is ongoing work.
 
 ## Minha
     www.minha.pt 
-
+## YCSB (v. 0.1.4)
+	https://github.com/brianfrankcooper/YCSB
 
 # Build
 
-Place Minha dependencies and Minha itself on folder named "lib".
-Run "ant jar"
+Maven install Minha and YCSB in a folder named "repo" in the project directory.
+mvn package
 
 # Configuration 
 
