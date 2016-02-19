@@ -11,6 +11,7 @@ public class DFLogger {
 	private org.apache.log4j.Logger log;
 	public DFLogger(String name, String loglevel){
 		this.log = org.apache.log4j.Logger.getLogger(name);
+		this.log.setAdditivity(false);
 		if(loglevel.equals("info")){
 			this.log.setLevel(Level.INFO);
 		}
@@ -29,7 +30,9 @@ public class DFLogger {
 
 			e1.printStackTrace();
 		}
+		
 		capp.setName(name);
+		this.log.removeAllAppenders();
 		this.log.addAppender(capp);
 		this.name = name;
 	}
