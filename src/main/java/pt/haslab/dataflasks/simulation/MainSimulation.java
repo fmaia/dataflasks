@@ -674,7 +674,7 @@ public class MainSimulation {
 			wikiip = wikihost.getAddress().getCanonicalHostName();
 			Runtime.getRuntime().exec("mkdir "+wikiip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling WikiLoad run at "+runtime+" s");
-			wiki.at(runtime,TimeUnit.SECONDS).queue().main("client.WikiPutter","",wikiip,"9500",new Long(clienttimeout).toString(),firstip,new Long(psssleepinterval).toString(),new Integer(nrwikisnapshots).toString());
+			wiki.at(runtime,TimeUnit.SECONDS).queue().main("pt.haslab.dataflasks.client.WikiPutter","",wikiip,"9500",new Long(clienttimeout).toString(),firstip,new Long(psssleepinterval).toString(),new Integer(nrwikisnapshots).toString());
 			
 		} catch (IllegalArgumentException e) {
 			// TODO Auto-generated catch block
