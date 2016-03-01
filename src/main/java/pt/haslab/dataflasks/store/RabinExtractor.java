@@ -14,8 +14,10 @@ public class RabinExtractor {
   
     public ArrayList<RabinBlock> getblocks(int size, byte[] data){
     	ArrayList<RabinBlock> blocks=new ArrayList<RabinBlock>();
+    	try{
+    	
         System.loadLibrary("rabinfingerprints");
-        //System.out.println("library loaded");
+        //System.out.println("library loaded.");
         String[] res = this.extractblocks(size,data);
         int pos=0;
         for( String el : res ){
@@ -32,6 +34,10 @@ public class RabinExtractor {
             	//System.out.println(el);
         	}	
         }
+    	}
+    	catch( Throwable e) {
+    		e.printStackTrace();
+    	}
         //System.out.println("get blocks processed");
         return blocks;
     }

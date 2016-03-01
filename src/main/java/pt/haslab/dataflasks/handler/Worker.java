@@ -129,7 +129,7 @@ public class Worker implements Runnable {
 		switch (operation) {
 		case 2:
 			//PUT operation
-			this.log.info("Received Put Operation in Worker thread. key:value -> "+ this.msg.key + " : "+ this.msg.value );
+			this.log.info("Received Put Operation in Worker thread. key:version -> "+ this.msg.key + " : "+ this.msg.version );
 			long key = this.msg.key;
 			long version = this.msg.version;
 			byte[] value = this.msg.value;
@@ -188,7 +188,7 @@ public class Worker implements Runnable {
 			break;
 		case 3:
 			//GET operation
-			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key);
+			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key+" Version:"+this.msg.version);
 			String requestid = this.msg.reqid;
 			long requestedkey = this.msg.key;
 			long requestedversion = this.msg.version;
@@ -286,8 +286,9 @@ public class Worker implements Runnable {
 		case 10:
 			//Reply to Exchange Gets
 			this.log.info("Value with key:"+msg.key+" received in antiEntropy mechanism");
-			this.store.put(msg.key, msg.version, msg.value);
-
+			if(!this.store.haveseen(msg.key,msg.version)){
+				this.store.put(msg.key, msg.version, msg.value);
+			}
 			break;
 			
 			

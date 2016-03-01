@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.store;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -209,7 +210,11 @@ public class KVStoreMemory implements KVStore{
 		return value;
 	}
 
-
+	public synchronized HashMap<StoreKey,ArrayList<String>> getHashes(){
+		//This store does not handle hashes
+		HashMap<StoreKey,ArrayList<String>> res = new HashMap<StoreKey,ArrayList<String>>();
+		return res;
+	}
 	
 	public synchronized int getSlice() {
 		return slice;

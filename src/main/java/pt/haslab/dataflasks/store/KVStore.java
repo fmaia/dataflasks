@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.store;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 
 public interface KVStore {
@@ -27,6 +29,7 @@ public interface KVStore {
 	//------------------------------------------------------
 	public void updatePartition(int p, int np);
 	public HashSet<StoreKey> getKeys();
+	public HashMap<StoreKey,ArrayList<String>> getHashes();
 	public boolean haveseen(Long key, Long version);
 	public void seenit(Long key, Long version);
 	public boolean inLog(String key);

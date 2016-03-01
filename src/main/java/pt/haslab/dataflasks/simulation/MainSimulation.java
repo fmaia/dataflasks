@@ -587,7 +587,7 @@ public class MainSimulation {
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB run at "+runtime+" s");
-			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","client.YCSBGlue","-p","exportfile=ycsbRUN.txt",
+			ycsb.at(runtime,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-t","-s","-threads","1","-db","pt.haslab.dataflasks.client.YCSBGlue","-p","exportfile=ycsbRUN.txt",
 					"-p","stratus.ip="+ycsbip,"-p", "stratus.port=8000","-p", "stratus.id=ycsbRun","-p","stratus.timeout="+clienttimeout,
 					"-p","stratus.bootip="+firstip,"-p","stratus.lbinterval="+psssleepinterval,"-P", "workloads/workloadb");
 			
@@ -631,7 +631,7 @@ public class MainSimulation {
 			Runtime.getRuntime().exec("mkdir "+ycsbip);
 			Runtime.getRuntime().exec("cp -r workloads/ "+ycsbip);
 			if (loglevel.equals("debug"))System.out.println("Scheduling YCSB load at "+initload+" s");
-			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","client.YCSBGlue","-p","exportfile=ycsbLOAD.txt",
+			ycsb.at(initload,TimeUnit.SECONDS).queue().main("com.yahoo.ycsb.Client","-load","-s","-threads","1","-db","pt.haslab.dataflasks.client.YCSBGlue","-p","exportfile=ycsbLOAD.txt",
 					"-p","stratus.ip="+ycsbip,"-p","stratus.port=9000","-p", "stratus.id=ycsbload","-p","stratus.timeout="+clienttimeout,
 					"-p","stratus.bootip="+firstip,"-p","stratus.lbinterval="+psssleepinterval,"-P", "workloads/workloadb");
 			

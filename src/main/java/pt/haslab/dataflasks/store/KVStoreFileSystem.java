@@ -20,6 +20,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -239,6 +240,12 @@ public class KVStoreFileSystem implements KVStore{
 			keys.add(l);
 		}
 		return keys;
+	}
+	
+	public synchronized HashMap<StoreKey,ArrayList<String>> getHashes(){
+		//This store does not handle hashes
+		HashMap<StoreKey,ArrayList<String>> res = new HashMap<StoreKey,ArrayList<String>>();
+		return res;
 	}
 	
 	//Store key log management

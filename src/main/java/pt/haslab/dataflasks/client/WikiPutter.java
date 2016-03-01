@@ -5,6 +5,7 @@ import java.security.InvalidParameterException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -253,7 +254,10 @@ public class WikiPutter
 	 */
 	public static void sendData( String name, int version, byte[] content )
 	{
-		dfcli.put(Long.parseLong(name), new Long(version), content);
+		Set<Long> repliers = null;
+		while(repliers==null){
+			repliers = dfcli.put(Long.parseLong(name), new Long(version), content);
+		}
 	}
 
 

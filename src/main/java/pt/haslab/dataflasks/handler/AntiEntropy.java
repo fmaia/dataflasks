@@ -21,12 +21,14 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
 import pt.haslab.dataflasks.pss.PSS;
+import pt.haslab.dataflasks.store.KVDedupStoreFileSystem;
 import pt.haslab.dataflasks.store.KVStore;
 import pt.haslab.dataflasks.store.StoreKey;
 import pt.haslab.dataflasks.common.PeerData;
@@ -75,9 +77,9 @@ public class AntiEntropy implements Runnable{
 	
 	
 	
-	private void sendPeerKeys(PeerData p,HashSet<StoreKey> mykeys){
+	private void sendPeerKeys(PeerData p,HashSet<StoreKey> mykeys, HashMap<StoreKey,ArrayList<String>> hashes){
 		try{
-			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys).encodeMessage();
+			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys, hashes).encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			this.socketsender.send(packet);		
 		} catch (IOException e) {
@@ -100,21 +102,26 @@ public class AntiEntropy implements Runnable{
 		int cycle = 0;
 		this.log.info("to run anti-entropy?:"+this.running);
 		while(this.running){
-				this.log.info("Anti Entropy running...");
+				this.log.debug("Anti Entropy running...");
 				try {
 					
-					this.log.info("Anti Entropy sleeping "+this.interval);
+					this.log.debug("Anti Entropy sleeping "+this.interval);
 					Thread.sleep(this.interval);
-					this.log.info("Anti Entropy waked up ");
+					this.log.debug("Anti Entropy waked up ");
 					cycle = cycle + 1;
 					if(running){ //Treat the case where the Peer was removed and the Thread is assleep. 
 						time = time + this.interval;
-						this.log.info("Anti Entropy cycle "+cycle+" at time "+time);
+						this.log.debug("Anti Entropy cycle "+cycle+" at time "+time);
 						ArrayList<PeerData> myneighbors = view.getSliceLocalView();
 						for(PeerData toContact : myneighbors){
 							//Contact Peer in order to check if there are missing objects
 							HashSet<StoreKey> mykeys = this.store.getKeys();
-							this.sendPeerKeys(toContact,mykeys);
+							HashMap<StoreKey,ArrayList<String>> hashes = new HashMap<StoreKey,ArrayList<String>>();
+							if(this.store.getClass().equals(KVDedupStoreFileSystem.class)){
+								//In this case we also need to send file block hashes
+								hashes = this.store.getHashes();
+							}
+							this.sendPeerKeys(toContact,mykeys, hashes);
 							this.log.debug("Anti Entropy request sent to "+toContact.getID()+" with "+mykeys.size()+" keys at cycle "+cycle);
 						}
 

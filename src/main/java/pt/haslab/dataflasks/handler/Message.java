@@ -17,7 +17,8 @@ package pt.haslab.dataflasks.handler;
 
 import java.io.*;
 import java.util.HashSet;
-
+import java.util.ArrayList;
+import java.util.HashMap;
 import pt.haslab.dataflasks.store.StoreKey;
 
 
@@ -32,6 +33,7 @@ public class Message {
 	public String reqid;
 	public long id;
 	public HashSet<StoreKey> keys;
+	public HashMap<StoreKey,ArrayList<String>> hashlist;
 	
 	public Message(int type, String ip, int port,long id,String reqid){
 		this.messagetype = type;
@@ -44,7 +46,7 @@ public class Message {
 		this.reqid = reqid;
 	}
 	
-	public Message(int type, String ip, int port,long id, HashSet<StoreKey> keys){
+	public Message(int type, String ip, int port,long id, HashSet<StoreKey> keys, HashMap<StoreKey,ArrayList<String>> hashes ){
 		this.messagetype = type;
 		this.id = id;
 		this.ip = ip;
@@ -54,6 +56,7 @@ public class Message {
 		this.value = null;
 		this.reqid = "-1";
 		this.keys = keys;
+		this.hashlist = hashes;
 	}
 	
 	public Message(int type, String ip, int port,byte[] value,String reqid,Long key,Long version, long id){
@@ -106,6 +109,16 @@ public class Message {
 					StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
 					this.keys.add(tmp);
 					keynumber=keynumber -1;
+				}
+				int hashnumber = dis.readInt();
+				while(hashnumber>0){
+					StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
+					int filehashes = dis.readInt();
+					ArrayList<String> hsls = new ArrayList<String>();
+					while(filehashes>0){
+						hsls.add(dis.readUTF());
+					}
+					this.hashlist.put(tmp, hsls);
 				}
 				break;
 			case 10:
@@ -192,6 +205,16 @@ public class Message {
 				}
 				out.flush();
 				res = baos.toByteArray();
+				out.writeInt(this.hashlist.size());
+				for(StoreKey k : this.hashlist.keySet()){
+					out.writeLong(k.key);
+					out.writeLong(k.version);
+					ArrayList<String> lst = this.hashlist.get(k);
+					out.writeInt(lst.size());
+					for(String s : lst){
+						out.writeUTF(s);
+					}
+				}
 				out.close();
 				break;
 			case 10:

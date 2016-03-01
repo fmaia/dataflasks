@@ -292,6 +292,15 @@ public class KVDedupStoreFileSystem implements KVStore{
 		return keys;
 	}
 	
+	
+	public synchronized HashMap<StoreKey,ArrayList<String>> getHashes(){
+		HashMap<StoreKey,ArrayList<String>> res = new HashMap<StoreKey,ArrayList<String>>();
+		for(StoreKey k : this.mystore.keySet()){
+			res.put(k, this.mystore.get(k).listofblocks);
+		}
+		return res;
+	}
+	
 	//Store key log management
 	
 	public synchronized boolean haveseen(Long key, Long version){
