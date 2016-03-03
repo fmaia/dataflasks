@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import pt.haslab.dataflasks.store.StoreKey;
 
-
 public class Message {
 
 	public int messagetype;
@@ -81,13 +80,9 @@ public class Message {
 			this.id = dis.readLong();
 			this.ip = dis.readUTF();
 			this.port = dis.readInt();
-			
-			switch(this.messagetype) {
-			case 1:
-				//SLEAD Operation
-				//TODO
-				break;
-			case 2:
+			MessageType op = MessageType.getType(this.messagetype);
+			switch(op) {
+			case PUT:
 				//PUT Operation
 				this.key = dis.readLong();
 				this.version = dis.readLong();
@@ -95,13 +90,13 @@ public class Message {
 				this.value = new byte[valuesize];
 				dis.read(value, 0, valuesize);
 				break;
-			case 3:
+			case GET:
 				//GET Operation
 				this.key = dis.readLong();
 				this.version = dis.readLong();
 				this.reqid = dis.readUTF();
 				break;
-			case 4:
+			case EXCHANGE:
 				//Exchange Operation
 				int keynumber = dis.readInt();
 				this.keys = new HashSet<StoreKey>();
@@ -121,7 +116,7 @@ public class Message {
 					this.hashlist.put(tmp, hsls);
 				}
 				break;
-			case 10:
+			case GETREPLY:
 				//GET reply
 				this.key = dis.readLong();
 				this.version = dis.readLong();
@@ -131,13 +126,10 @@ public class Message {
 				dis.read(value, 0, nvaluesize);
 
 				break;
-			case 11:
+			case PUTREPLY:
 				//PUT reply
 				this.key = dis.readLong();
 				this.version = dis.readLong();
-				break;
-			case 23:
-				//Shutdown Thread
 				break;
 			default: 
 				break;
@@ -156,14 +148,11 @@ public class Message {
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
 		try {
-			switch(this.messagetype) {
-			case 1:
-				//SLEAD Operation
-				//TODO
-				break;
-			case 2:
+			MessageType op = MessageType.getType(this.messagetype);
+			switch(op) {
+			case PUT:
 				//PUT Operation
-				out.writeInt(2);
+				out.writeInt(this.messagetype);
 				out.writeLong(id);
 				out.writeUTF(ip);
 				out.writeInt(port);
@@ -177,9 +166,9 @@ public class Message {
 				res = baos.toByteArray();
 				out.close();
 				break;
-			case 3:
+			case GET:
 				//GET Operation
-				out.writeInt(3);
+				out.writeInt(this.messagetype);
 				out.writeLong(id);
 				out.writeUTF(ip);
 				out.writeInt(port);
@@ -192,9 +181,9 @@ public class Message {
 				res = baos.toByteArray();
 				out.close();
 				break;
-			case 4:
+			case EXCHANGE:
 				//Exchange message
-				out.writeInt(4);
+				out.writeInt(this.messagetype);
 				out.writeLong(id);
 				out.writeUTF(ip);
 				out.writeInt(port);
@@ -217,9 +206,9 @@ public class Message {
 				}
 				out.close();
 				break;
-			case 10:
+			case GETREPLY:
 				//GET reply
-				out.writeInt(10);
+				out.writeInt(this.messagetype);
 				out.writeLong(id);
 				out.writeUTF(ip);
 				out.writeInt(port);
@@ -233,9 +222,9 @@ public class Message {
 				res = baos.toByteArray();
 				out.close();
 				break;
-			case 11:
+			case PUTREPLY:
 				//PUT reply
-				out.writeInt(11);
+				out.writeInt(this.messagetype);
 				out.writeLong(id);
 				out.writeUTF(ip);
 				out.writeInt(port);
@@ -271,7 +260,7 @@ public class Message {
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
 		try {
-			out.writeInt(3);
+			out.writeInt(MessageType.getValueType(MessageType.GET));
 			out.writeLong(id);
 			out.writeUTF(ip);
 			out.writeInt(port);
@@ -296,7 +285,7 @@ public class Message {
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
 		try {
-			out.writeInt(2);
+			out.writeInt(MessageType.getValueType(MessageType.PUT));
 			out.writeLong(id);
 			out.writeUTF(ip);
 			out.writeInt(port);
@@ -313,7 +302,7 @@ public class Message {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}	
+		}
 		return res;
 	}
 	

@@ -21,6 +21,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
+import java.util.HashSet;
 import java.util.Set;
 
 import pt.haslab.dataflasks.common.DFLogger;
@@ -38,6 +39,7 @@ public class Client implements PLAPI {
 	private DFLogger log;
 	private LoadBalancer lb;
 	private Long requestcount;
+	private int nputrequired;
 	private ClientReplyHandler handler;
 	private String myid;
 	
@@ -49,6 +51,7 @@ public class Client implements PLAPI {
 		this.myport = port;
 		this.lb = lb;
 		this.requestcount = 0L;
+		this.nputrequired = nputreps;
 		this.myid = id; 
 		try {
 			this.sendersocket = new DatagramSocket(senderport);
@@ -56,36 +59,43 @@ public class Client implements PLAPI {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		this.handler = new ClientReplyHandler(ip, port,nputreps,waittimeout,log);
+		this.handler = new ClientReplyHandler(ip, port,this.nputrequired,waittimeout,log);
 		new Thread(handler).start();
 		log.info("Client STARTED. IP:"+myip+" PORT:"+myport);
 	}
 	
-	public synchronized void stop(){
-		this.sendersocket.close();
+	public void stop(){
+		synchronized(this.sendersocket){
+			this.sendersocket.close();
+		}
 		this.handler.stop();
 	}
 	
-	private synchronized int sendput(PeerData p, Long key,Long version, byte[] value){
+	private int sendput(PeerData p, Long key,Long version, byte[] value){
 
 		try { 
+			//System.out.println("PUT KEY:"+key+" DATALENGTH:"+value.length);
 			byte[] toSend = Message.encodeMessagePut(this.myip,this.myport,key,version,value,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			this.sendersocket.send(packet);		
+			synchronized(this.sendersocket){
+				this.sendersocket.send(packet);		
+			}
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendput Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
-			//e.printStackTrace();
+			e.printStackTrace();
 		}
 		return 1;
 	} 
 	
 	
-	private synchronized int sendget(PeerData p, Long key, Long version, String requestid){
+	private int sendget(PeerData p, Long key, Long version, String requestid){
 		try {
 			byte[] toSend = Message.encodeMessageGet(this.myip,this.myport,key,version, requestid,Long.parseLong(myid));
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			this.sendersocket.send(packet);		
+			synchronized(this.sendersocket){
+				this.sendersocket.send(packet);	
+			}
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
@@ -107,22 +117,26 @@ public class Client implements PLAPI {
 
 
 	
-	public synchronized Set<Long> put(long key, long version, byte[] data) {
+	public Set<Long> put(long key, long version, byte[] data) {
 		this.handler.registerPut(key);
-		Set<Long> res = null;
-		while(res==null){ //success
+		Set<Long> res = new HashSet<Long>();
+		while(res.size()<this.nputrequired){ //success
 			PeerData p = this.lb.getRandomPeer();
 			int status = this.sendput(p, key, version, data);
 			if(status==0){
-				this.log.debug("PUT to "+p.getID()+" KEY "+key+" WAITING FOR REPLY");
-				res = this.handler.waitForPut(key);
+				this.log.info("PUT to "+p.getID()+" KEY "+key+" VERSION "+version+" WAITING FOR REPLY");
+				Set<Long> handlerres = this.handler.waitForPut(key);
+				//System.out.println("WAITRES: "+handlerres.size());
+				if(handlerres!=null){
+					res = handlerres;
+				}
 			}
 		}
 		return res;
 	}
 
 
-	public synchronized byte[] get(long nodeID, long key, long version) {
+	public byte[] get(long nodeID, long key, long version) {
 		Long req_id = this.getRequestcount();
 		String thisreq = nodeID + ":" + this.myip+":"+this.myport + ":" + req_id.toString();
 		this.handler.registerGet(thisreq);
@@ -131,7 +145,7 @@ public class Client implements PLAPI {
 			PeerData p = this.lb.getRandomPeer();
 			int status = this.sendget(p,key,version, thisreq);
 			if(status==0){
-				this.log.debug("GET to "+p.getID()+" KEY "+key+" REQID "+thisreq+" WAITING FOR REPLY");
+				this.log.info("GET to "+p.getID()+" KEY "+key+" REQID "+thisreq+" WAITING FOR REPLY");
 				res = this.handler.waitForGet(thisreq);
 			}
 		}
@@ -139,7 +153,7 @@ public class Client implements PLAPI {
 	}
 
 	
-	public synchronized byte[] delete(long nodeID, long key, long version) {
+	public byte[] delete(long nodeID, long key, long version) {
 		// TODO Auto-generated method stub
 		return null;
 	}

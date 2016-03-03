@@ -26,6 +26,7 @@ import java.util.TreeSet;
 import pt.haslab.dataflasks.common.DFLogger;
 
 import pt.haslab.dataflasks.handler.Message;
+import pt.haslab.dataflasks.handler.MessageType;
 
 
 
@@ -104,18 +105,18 @@ public class ClientReplyHandler implements Runnable {
 	public Set<Long> waitForPut(Long key){
 		Set<Long> res = null;
 		synchronized(this.putReplies){
-			Set<Long> repliers = this.putReplies.get(key);
-			while(repliers.size()<this.putreps){
-				try {
-					this.putReplies.wait(this.waitTimeout);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				repliers = this.putReplies.get(key);
+			try {
+				this.putReplies.wait(this.waitTimeout);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-			res = repliers;
-			//Cleaning table:
-			this.putReplies.remove(key);
+			res = this.putReplies.get(key);
+			if(res!=null){
+				if(res.size()==this.putreps){
+					//Cleaning table:
+					this.putReplies.remove(key);
+				}
+			}
 		}
 		return res;
 	}
@@ -126,12 +127,12 @@ public class ClientReplyHandler implements Runnable {
 		//Waits for incoming connections and processes them.
 				while (this.running) {
 					try {
-						DatagramPacket packet = new DatagramPacket(new byte[1000],1000);
+						DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
 						ss.receive(packet);
 						Message msg = new Message(packet.getData());
-						int op = msg.messagetype;
+						MessageType op = MessageType.getType(msg.messagetype);
 						switch(op){
-						case 10:
+						case GETREPLY:
 							String requestid = msg.reqid;
 							long replierid = msg.id;
 							byte[] value = msg.value;
@@ -139,31 +140,31 @@ public class ClientReplyHandler implements Runnable {
 								if(this.getReplies.containsKey(requestid)){
 									this.getReplies.put(requestid, value);
 									this.getReplies.notifyAll();
-									log.debug("GET reply received from:"+replierid+" REQID "+requestid);
+									log.info("GET reply received from:"+replierid+" REQID "+requestid);
 								}
 								else{
-									log.debug("GET REPLY IGNORED from "+replierid+" REQID "+requestid);
+									log.info("GET REPLY IGNORED from "+replierid+" REQID "+requestid);
 								}
 							}
 							break;
-						case 11:
+						case PUTREPLY:
 							long key = msg.key;	
 							long replierid1 = msg.id;
 							synchronized(this.putReplies){
 								Set<Long> current = this.putReplies.get(key);
 								if(current==null){
-									log.debug("PUT REPLY IGNORED from "+replierid1+" KEY "+key);
+									log.info("PUT REPLY IGNORED from "+replierid1+" KEY "+key);
 								}
 								else{
 									current.add(replierid1);
 									this.putReplies.put(key, current);
 									this.putReplies.notifyAll();
-									log.debug("PUT reply received from:"+replierid1+" KEY "+key);
+									log.info("PUT reply received from:"+replierid1+" KEY "+key);
 								}
 							}
 							break;
 						default: 
-							log.debug("CLIENTMSG Operation unrecognized. Going to wait for others.");
+							log.info("CLIENTMSG Operation unrecognized. Going to wait for others.");
 							break;
 						}
 						

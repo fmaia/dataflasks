@@ -16,6 +16,7 @@ import pt.haslab.dataflasks.loadbalancing.LoadBalancer;
 
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.Arrays;
 import java.util.Collections;
 
 public class WikiPutter
@@ -32,6 +33,10 @@ public class WikiPutter
 
 	public static Client dfcli;
 
+	public static int reqid = 0;
+	
+	private static DFLogger log;
+	
 	public static void main( final String[] args )
 	{
 		try{	
@@ -45,7 +50,7 @@ public class WikiPutter
 		String absoluteFolderPath = null;
 		
 		//Logger
-		DFLogger log = new DFLogger("wikiload."+myip,"debug");
+		log = new DFLogger("wikiload."+myip,"info");
 		//Starting load balancer
 		LoadBalancer lb = new DynamicLoadBalancer(log, new Random(),bootip,myip,lbinterval);
 		new Thread(new LBPassiveThread((DynamicLoadBalancer) lb,myip,log)).start();
@@ -57,7 +62,7 @@ public class WikiPutter
 		int nputreplies = 1;
 		//The Client will always have the id 0 - req id is distinguished by PORT
 		int senderport = 1000;
-		System.out.println("[WIKILOAD] Initializing WikiLoader.");
+		log.info("[WIKILOAD] Initializing WikiLoader.");
 		dfcli = new Client(new Long(0).toString(),lb,myip,myport,senderport,nputreplies,clienttimeout,log);
 
 		log.info("DataFlasks client set up.");
@@ -245,6 +250,13 @@ public class WikiPutter
 		}
 	}
 
+	
+	
+	public synchronized static int getreqid(){
+		reqid = reqid +1;
+		return reqid;
+	}
+	
 	/**
 	 * Send article's content to server.
 	 *
@@ -254,10 +266,18 @@ public class WikiPutter
 	 */
 	public static void sendData( String name, int version, byte[] content )
 	{
-		Set<Long> repliers = null;
-		while(repliers==null){
-			repliers = dfcli.put(Long.parseLong(name), new Long(version), content);
+		//currently only supports files smaller than 65500 bytes (UDP max)
+		if(content.length <= 65500){
+			long key = Long.parseLong(name);
+			long ver = new Long(version);
+			Set<Long> repliers = null;
+			while(repliers==null){
+				repliers = dfcli.put(key, ver , content);
+			}
+			byte[] res = dfcli.get(getreqid(), key, ver);
+			log.info("PUT/GET check key: "+key+" version:"+version+" "+Arrays.equals(content, res));
 		}
+		
 	}
 
 

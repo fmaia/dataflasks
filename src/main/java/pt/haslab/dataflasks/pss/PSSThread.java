@@ -105,7 +105,7 @@ public class PSSThread extends Thread {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-				DatagramPacket packet = new DatagramPacket(new byte[100000],100000);
+				DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
 				log.debug("PSSThread waiting for packet....");
 				ss.receive(packet);
 				byte[] data = packet.getData();

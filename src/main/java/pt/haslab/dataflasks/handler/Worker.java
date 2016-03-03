@@ -123,11 +123,11 @@ public class Worker implements Runnable {
 	
 
 	public void run() {
-		int operation = this.msg.messagetype;
+		MessageType operation = MessageType.getType(this.msg.messagetype);
 		String ip = this.msg.ip;
 		int port = this.msg.port;
 		switch (operation) {
-		case 2:
+		case PUT:
 			//PUT operation
 			this.log.info("Received Put Operation in Worker thread. key:version -> "+ this.msg.key + " : "+ this.msg.version );
 			long key = this.msg.key;
@@ -186,7 +186,7 @@ public class Worker implements Runnable {
 				this.log.info("Worker IGNORED PUT OPERATION for key:"+key);
 			}
 			break;
-		case 3:
+		case GET:
 			//GET operation
 			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key+" Version:"+this.msg.version);
 			String requestid = this.msg.reqid;
@@ -202,7 +202,7 @@ public class Worker implements Runnable {
 					//Send value to Client
 					float achance = this.rnd.nextFloat();
 					if(achance<=this.chance){
-						Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
+						Message replymsg = new Message(MessageType.getValueType(MessageType.GETREPLY),this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 						this.replyClient(replymsg);
 						this.log.debug("GET RECEIVED AND REPLIED req_id:"+requestid);
 						//Already replied to Client so no need to forward the request
@@ -240,13 +240,13 @@ public class Worker implements Runnable {
 			else{
 				//Special internal get for anti-entropy
 				if(requestid.startsWith("intern")){
-					this.log.info("PassiveThread Received Anti-Entropy reply.");
+					this.log.debug("PassiveThread Received Anti-Entropy reply.");
 					if(!this.store.aeIsInLog(requestid)){ //Check if this request was already seen by the peer. In that case, ignore it.
 						this.store.aeLog(requestid);
 						temp = this.store.get(new StoreKey(requestedkey,requestedversion));
 						if(temp!=null){
 							//Send value to Client
-							Message replymsg = new Message(10,this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
+							Message replymsg = new Message(MessageType.getValueType(MessageType.GETREPLY),this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 							this.replyClient(replymsg);
 							this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
 							//Already replied to Client so no need to forward the request
@@ -261,7 +261,7 @@ public class Worker implements Runnable {
 				}
 			}
 			break;
-		case 4:
+		case EXCHANGE:
 			//Exchange Operation
 			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msg.keys.size()+" keys.");
 			HashSet<StoreKey> mykeys = this.store.getKeys();
@@ -283,7 +283,7 @@ public class Worker implements Runnable {
 				sendget(this.msg.ip,k.key,k.version,this.myip,Peer.port);
 			}
 			break;
-		case 10:
+		case GETREPLY:
 			//Reply to Exchange Gets
 			this.log.info("Value with key:"+msg.key+" received in antiEntropy mechanism");
 			if(!this.store.haveseen(msg.key,msg.version)){
@@ -295,7 +295,7 @@ public class Worker implements Runnable {
 		default: break;
 
 		}
-		this.log.info("Worker finished.");
+		this.log.debug("Worker finished.");
 
 	}
 
