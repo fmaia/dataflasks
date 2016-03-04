@@ -301,6 +301,17 @@ public class KVDedupStoreFileSystem implements KVStore{
 		return res;
 	}
 	
+	public ArrayList<String> getMissingHashes(StoreKey k,ArrayList<String> hashes){
+		ArrayList<String> res = new ArrayList<String>();
+		for(String h : hashes){
+			//checking if the store has the block corresponding to this hash
+			if(!this.indexofblocks.keySet().contains(h)){
+				res.add(h);
+			}
+		}
+		return res;
+	}
+	
 	//Store key log management
 	
 	public synchronized boolean haveseen(Long key, Long version){

@@ -21,13 +21,14 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
 
 import pt.haslab.dataflasks.pss.PSS;
 
 import pt.haslab.dataflasks.common.DFLogger;
-
+import pt.haslab.dataflasks.store.KVDedupStoreFileSystem;
 import pt.haslab.dataflasks.store.KVStore;
 import pt.haslab.dataflasks.store.StoreKey;
 import pt.haslab.dataflasks.common.PeerData;
@@ -112,6 +113,21 @@ public class Worker implements Runnable {
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
 			socket.send(packet);
 			this.log.info("Anti entropy get sent.");
+			this.sockethandler.returnSocket(socket);
+			return 0;
+		} catch (IOException e) {
+			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
+			//e.printStackTrace();
+		}
+		return 1;
+	}
+	
+	private int sendhashesget(String targetip, byte[] toSend){
+		try {
+			DatagramSocket socket = this.sockethandler.getSocket();
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
+			socket.send(packet);
+			this.log.info("Missing hash get sent.");
 			this.sockethandler.returnSocket(socket);
 			return 0;
 		} catch (IOException e) {
@@ -279,8 +295,21 @@ public class Worker implements Runnable {
 				}
 			}
 			this.log.info("Anti entropy - going to ask for keys to "+this.msg.id+" keystoRequest:"+toRequest.size());
-			for (StoreKey k : toRequest){
-				sendget(this.msg.ip,k.key,k.version,this.myip,Peer.port);
+			if(this.store.getClass().equals(KVDedupStoreFileSystem.class)){
+				int reqmsgtype = MessageType.getValueType(MessageType.MISSINGHASHREQ);
+				//Dedup mode is on. Just requesting blocks that this node does not currently hold.
+				HashMap<StoreKey,ArrayList<String>> missingH = new HashMap<StoreKey,ArrayList<String>>();
+				for (StoreKey k : toRequest){
+					ArrayList<String> missinghashes = this.store.getMissingHashes(k, msg.hashlist.get(k));
+					missingH.put(k, missinghashes);
+				}
+				byte[] tosend = new Message(reqmsgtype,this.myip,Peer.port,this.myid,toRequest,missingH).encodeMessage();
+				sendhashesget(this.msg.ip,tosend);
+			}
+			else{
+				for (StoreKey k : toRequest){
+					sendget(this.msg.ip,k.key,k.version,this.myip,Peer.port);
+				}
 			}
 			break;
 		case GETREPLY:
@@ -290,9 +319,13 @@ public class Worker implements Runnable {
 				this.store.put(msg.key, msg.version, msg.value);
 			}
 			break;
+		case MISSINGHASHREQ:
+			// Some node requested missing blocks. Need to reply with what we have
 			
-			
-		default: break;
+			break;
+		default: 
+			this.log.info("Unrecognized message in Worker. Ignoring.");
+			break;
 
 		}
 		this.log.debug("Worker finished.");

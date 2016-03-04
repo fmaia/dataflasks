@@ -29,7 +29,7 @@ public interface KVStore {
 	//------------------------------------------------------
 	public void updatePartition(int p, int np);
 	public HashSet<StoreKey> getKeys();
-	public HashMap<StoreKey,ArrayList<String>> getHashes();
+	
 	public boolean haveseen(Long key, Long version);
 	public void seenit(Long key, Long version);
 	public boolean inLog(String key);
@@ -44,5 +44,7 @@ public interface KVStore {
 	//Anti-entropy log management
 	public void aeLog(String key);
 	public boolean aeIsInLog(String req);
-	
+	//Dedup specific API
+	public HashMap<StoreKey,ArrayList<String>> getHashes();
+	public ArrayList<String> getMissingHashes(StoreKey k,ArrayList<String> hashes);
 }

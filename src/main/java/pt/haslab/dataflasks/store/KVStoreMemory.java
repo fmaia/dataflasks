@@ -212,8 +212,12 @@ public class KVStoreMemory implements KVStore{
 
 	public synchronized HashMap<StoreKey,ArrayList<String>> getHashes(){
 		//This store does not handle hashes
-		HashMap<StoreKey,ArrayList<String>> res = new HashMap<StoreKey,ArrayList<String>>();
-		return res;
+		return null;
+	}
+	
+	public ArrayList<String> getMissingHashes(StoreKey k,ArrayList<String> hashes){
+		//This store does not handle hashes
+		return null;
 	}
 	
 	public synchronized int getSlice() {
