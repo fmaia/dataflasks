@@ -33,6 +33,8 @@ import pt.haslab.dataflasks.store.KVStore;
 import pt.haslab.dataflasks.store.StoreKey;
 import pt.haslab.dataflasks.common.PeerData;
 import pt.haslab.dataflasks.core.Peer;
+import pt.haslab.dataflasks.messaging.MessageInterface;
+import pt.haslab.dataflasks.messaging.ReplicaMaintenanceMessage;
 
 public class AntiEntropy implements Runnable{
 
@@ -79,7 +81,8 @@ public class AntiEntropy implements Runnable{
 	
 	private void sendPeerKeys(PeerData p,HashSet<StoreKey> mykeys, HashMap<StoreKey,ArrayList<String>> hashes){
 		try{
-			byte[] toSend = new Message(4,myIp,myPort,myID,mykeys, hashes).encodeMessage();
+			MessageInterface msg = new ReplicaMaintenanceMessage(myIp,myPort,myID,mykeys, hashes);
+			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			this.socketsender.send(packet);		
 		} catch (IOException e) {

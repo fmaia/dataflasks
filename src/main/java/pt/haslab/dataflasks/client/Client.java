@@ -27,7 +27,7 @@ import java.util.Set;
 import pt.haslab.dataflasks.common.DFLogger;
 
 import pt.haslab.dataflasks.loadbalancing.LoadBalancer;
-import pt.haslab.dataflasks.handler.Message;
+import pt.haslab.dataflasks.messaging.*;
 import pt.haslab.dataflasks.common.PeerData;
 import pt.haslab.dataflasks.core.Peer;
 
@@ -74,8 +74,8 @@ public class Client implements PLAPI {
 	private int sendput(PeerData p, Long key,Long version, byte[] value){
 
 		try { 
-			//System.out.println("PUT KEY:"+key+" DATALENGTH:"+value.length);
-			byte[] toSend = Message.encodeMessagePut(this.myip,this.myport,key,version,value,Long.parseLong(myid));
+			MessageInterface msg = new PutMessage(this.myip,this.myport,key,version,value,Long.parseLong(myid));
+			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			synchronized(this.sendersocket){
 				this.sendersocket.send(packet);		
@@ -91,7 +91,8 @@ public class Client implements PLAPI {
 	
 	private int sendget(PeerData p, Long key, Long version, String requestid){
 		try {
-			byte[] toSend = Message.encodeMessageGet(this.myip,this.myport,key,version, requestid,Long.parseLong(myid));
+			MessageInterface msg = new GetMessage(this.myip,this.myport,key,version, requestid,Long.parseLong(myid));
+			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 			synchronized(this.sendersocket){
 				this.sendersocket.send(packet);	

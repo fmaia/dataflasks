@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.handler;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -25,7 +27,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import pt.haslab.dataflasks.common.DFLogger;
-
+import pt.haslab.dataflasks.messaging.*;
 import pt.haslab.dataflasks.pss.PSS;
 import pt.haslab.dataflasks.store.KVStore;
 
@@ -80,6 +82,34 @@ public class PassiveThread implements Runnable {
 	}
 	
 	
+	private MessageInterface readMessage(byte[] data, MessageType type){
+		MessageInterface res = null;
+		switch(type){
+		case GET:
+			res = new GetMessage();
+			res.decodeMessage(data);
+			return res;
+		case PUT:
+			res = new PutMessage();
+			res.decodeMessage(data);
+			return res;
+		case REPLICAMAINTENANCE:
+			res = new ReplicaMaintenanceMessage();
+			res.decodeMessage(data);
+			return res;
+		case GETREPLY:
+			res = new GetReplyMessage();
+			res.decodeMessage(data);
+			return res;
+		case PUTREPLY:
+			res = new PutReplyMessage();
+			res.decodeMessage(data);
+			return res;
+		default:
+			return res;
+		}
+	}
+	
 	public void run() {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
@@ -90,8 +120,11 @@ public class PassiveThread implements Runnable {
 				ss.receive(packet);
 				byte[] data = packet.getData();
 				log.debug("PASSIVE packet received with size "+packet.getLength());
-				Message msg = new Message(data);
-				log.debug("PassiveThread Message Received of type:"+msg.messagetype);
+				DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+				int messagetype = dis.readInt();
+				dis.close();
+				MessageInterface msg = readMessage(data,MessageType.getType(messagetype));
+				log.debug("PassiveThread Message Received of type:"+msg.getMessageType());
 				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg,this.sockethandler));
 				//new Thread().start();;
 				log.debug("PASSIVE worker thread launched....");

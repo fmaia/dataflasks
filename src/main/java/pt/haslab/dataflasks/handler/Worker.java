@@ -33,6 +33,7 @@ import pt.haslab.dataflasks.store.KVStore;
 import pt.haslab.dataflasks.store.StoreKey;
 import pt.haslab.dataflasks.common.PeerData;
 import pt.haslab.dataflasks.core.Peer;
+import pt.haslab.dataflasks.messaging.*;
 
 public class Worker implements Runnable {
 	
@@ -52,12 +53,12 @@ public class Worker implements Runnable {
 	private float chance;
 	private Random rnd;
 	private boolean smartforward;
-	private Message msg;
+	private MessageInterface msg;
 	private String myip;
 	private SenderSocketHandler sockethandler;
 	
 	public Worker(String ip,Long id,KVStore store, PSS view, float chance,
-			boolean smart,DFLogger log, Random rnd, Message msg, SenderSocketHandler sockethandler){
+			boolean smart,DFLogger log, Random rnd, MessageInterface msg, SenderSocketHandler sockethandler){
 		this.log = log;
 		this.store = store;
 		this.view = view;
@@ -76,12 +77,12 @@ public class Worker implements Runnable {
 			//long start = System.nanoTime();
 			try {
 				//Connecting to host
-				this.log.debug("TRYING TO FORWARD MSG TO "+p.getID()+" KEY:"+this.msg.key+" MSGTYPE:"+this.msg.messagetype);			
+				this.log.debug("TRYING TO FORWARD MSG TO "+p.getID()+" MSGTYPE:"+this.msg.getClass());			
 				DatagramSocket socket = this.sockethandler.getSocket();
 				byte[] toSend = this.msg.encodeMessage();
 				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
 				socket.send(packet);		
-				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY: "+this.msg.key+ " REQID: "+this.msg.reqid+ " reqISSUER: "+this.msg.id);
+				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY: "+(this.msg.getMessageKey()));
 				this.sockethandler.returnSocket(socket);
 				
 			} catch (IOException e) {
@@ -93,11 +94,11 @@ public class Worker implements Runnable {
 	
 	
 	
-	private void replyClient(Message replymsg){
+	private void replyClient(MessageInterface replymsg){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
 			byte[] toSend = replymsg.encodeMessage();
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.msg.ip), this.msg.port);
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.msg.getMessageIP()), this.msg.getMessagePort());
 			socket.send(packet);	
 			this.sockethandler.returnSocket(socket);
 		} catch (IOException e) {
@@ -109,7 +110,8 @@ public class Worker implements Runnable {
 	private int sendget(String targetip, Long key, Long version, String ip, int port){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
-			byte[] toSend = Message.encodeMessageGet(ip,Peer.port,key,version,"intern"+this.myid+getAeReqCount(),this.myid);
+			MessageInterface msg = new GetMessage(ip,Peer.port,key,version,"intern"+this.myid+getAeReqCount(),this.myid);
+			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
 			socket.send(packet);
 			this.log.info("Anti entropy get sent.");
@@ -139,16 +141,16 @@ public class Worker implements Runnable {
 	
 
 	public void run() {
-		MessageType operation = MessageType.getType(this.msg.messagetype);
-		String ip = this.msg.ip;
-		int port = this.msg.port;
+		MessageType operation = this.msg.getMessageType();
+		String ip = this.msg.getMessageIP();
+		int port = this.msg.getMessagePort();
 		switch (operation) {
 		case PUT:
 			//PUT operation
-			this.log.info("Received Put Operation in Worker thread. key:version -> "+ this.msg.key + " : "+ this.msg.version );
-			long key = this.msg.key;
-			long version = this.msg.version;
-			byte[] value = this.msg.value;
+			long key = ((PutMessage)this.msg).key;
+			long version = ((PutMessage)this.msg).version;
+			byte[] value = ((PutMessage)this.msg).value;
+			this.log.info("Received Put Operation in Worker thread. key:version -> "+ key + " : "+ version );
 			//Storing value if it should be stored
 			if(!this.store.haveseen(key,version)){
 				boolean stored = this.store.put(key, version, value);
@@ -158,7 +160,7 @@ public class Worker implements Runnable {
 					ArrayList<PeerData> myview = this.view.getSliceLocalView();
 					if(achance<=this.chance){
 						//if this node stored the value should reply the client signaling such operation
-						Message replymsg = new Message(11,this.myip,Peer.port,null,null,key,version,this.myid);
+						MessageInterface replymsg = new PutReplyMessage(this.myip,Peer.port,key,version,this.myid);
 						this.replyClient(replymsg);
 						//forwarding the request to other peers IN MY SLICE if it is a new obj.
 						this.log.info("stored and tried to reply to client "+ip+":"+port+" key "+key);
@@ -204,11 +206,11 @@ public class Worker implements Runnable {
 			break;
 		case GET:
 			//GET operation
-			this.log.info("Received get operation in Worker thread: reqid:"+this.msg.reqid+ " Key:"+this.msg.key+" Version:"+this.msg.version);
-			String requestid = this.msg.reqid;
-			long requestedkey = this.msg.key;
-			long requestedversion = this.msg.version;
+			String requestid = ((GetMessage)this.msg).reqid;
+			long requestedkey = ((GetMessage)this.msg).key;
+			long requestedversion = ((GetMessage)this.msg).version;
 			byte[] temp = null;
+			this.log.info("Received get operation in Worker thread: reqid:"+requestid+ " Key:"+requestedkey+" Version:"+requestedversion);
 			//Check if this is a duplicate request
 			this.log.debug("GET: "+this.store.inLog(requestid));
 			if(!this.store.inLog(requestid) && !requestid.startsWith("intern")){
@@ -218,7 +220,7 @@ public class Worker implements Runnable {
 					//Send value to Client
 					float achance = this.rnd.nextFloat();
 					if(achance<=this.chance){
-						Message replymsg = new Message(MessageType.getValueType(MessageType.GETREPLY),this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
+						MessageInterface replymsg = new GetReplyMessage(this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 						this.replyClient(replymsg);
 						this.log.debug("GET RECEIVED AND REPLIED req_id:"+requestid);
 						//Already replied to Client so no need to forward the request
@@ -262,7 +264,7 @@ public class Worker implements Runnable {
 						temp = this.store.get(new StoreKey(requestedkey,requestedversion));
 						if(temp!=null){
 							//Send value to Client
-							Message replymsg = new Message(MessageType.getValueType(MessageType.GETREPLY),this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
+							MessageInterface replymsg = new GetReplyMessage(this.myip,Peer.port,temp,requestid,requestedkey,requestedversion,this.myid);
 							this.replyClient(replymsg);
 							this.log.info("ANTI ENTROPY GET RECEIVED AND REPLIED req_id:"+requestid);
 							//Already replied to Client so no need to forward the request
@@ -277,46 +279,48 @@ public class Worker implements Runnable {
 				}
 			}
 			break;
-		case EXCHANGE:
+		case REPLICAMAINTENANCE:
 			//Exchange Operation
-			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msg.keys.size()+" keys.");
+			HashSet<StoreKey> msgkeys = ((ReplicaMaintenanceMessage)msg).keys;
+			this.log.info("PassiveThread Received Anti-Entropy request. Received "+msgkeys.size()+" keys.");
 			HashSet<StoreKey> mykeys = this.store.getKeys();
 			HashSet<StoreKey> toRequest = new HashSet<StoreKey>();
 			if(mykeys.isEmpty()){
-				for(StoreKey l : msg.keys){
+				for(StoreKey l : msgkeys){
 					toRequest.add(l);
 				}
 			}
 			else{
-				for(StoreKey l : msg.keys){
+				for(StoreKey l : msgkeys){
 					if(!mykeys.contains(l)){
 						toRequest.add(l);
 					}
 				}
 			}
-			this.log.info("Anti entropy - going to ask for keys to "+this.msg.id+" keystoRequest:"+toRequest.size());
+			this.log.info("Anti entropy - going to ask for keys to "+this.msg.getMessageID()+" keystoRequest:"+toRequest.size());
 			if(this.store.getClass().equals(KVDedupStoreFileSystem.class)){
 				int reqmsgtype = MessageType.getValueType(MessageType.MISSINGHASHREQ);
 				//Dedup mode is on. Just requesting blocks that this node does not currently hold.
 				HashMap<StoreKey,ArrayList<String>> missingH = new HashMap<StoreKey,ArrayList<String>>();
-				for (StoreKey k : toRequest){
+				/*for (StoreKey k : toRequest){
 					ArrayList<String> missinghashes = this.store.getMissingHashes(k, msg.hashlist.get(k));
 					missingH.put(k, missinghashes);
-				}
-				byte[] tosend = new Message(reqmsgtype,this.myip,Peer.port,this.myid,toRequest,missingH).encodeMessage();
-				sendhashesget(this.msg.ip,tosend);
+				}*/
+				//byte[] tosend = new Message(reqmsgtype,this.myip,Peer.port,this.myid,toRequest,missingH).encodeMessage();
+				//sendhashesget(this.msg.ip,tosend);
 			}
 			else{
 				for (StoreKey k : toRequest){
-					sendget(this.msg.ip,k.key,k.version,this.myip,Peer.port);
+					sendget(this.msg.getMessageIP(),k.key,k.version,this.myip,Peer.port);
 				}
 			}
 			break;
 		case GETREPLY:
 			//Reply to Exchange Gets
-			this.log.info("Value with key:"+msg.key+" received in antiEntropy mechanism");
-			if(!this.store.haveseen(msg.key,msg.version)){
-				this.store.put(msg.key, msg.version, msg.value);
+			GetReplyMessage grmsg = (GetReplyMessage) msg;
+			this.log.info("Value with key:"+grmsg.key+" received in antiEntropy mechanism");
+			if(!this.store.haveseen(grmsg.key,grmsg.version)){
+				this.store.put(grmsg.key, grmsg.version, grmsg.value);
 			}
 			break;
 		case MISSINGHASHREQ:

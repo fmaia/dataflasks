@@ -15,6 +15,8 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.client;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -24,9 +26,8 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import pt.haslab.dataflasks.common.DFLogger;
-
-import pt.haslab.dataflasks.handler.Message;
-import pt.haslab.dataflasks.handler.MessageType;
+import pt.haslab.dataflasks.messaging.*;
+import pt.haslab.dataflasks.messaging.MessageType;
 
 
 
@@ -129,10 +130,15 @@ public class ClientReplyHandler implements Runnable {
 					try {
 						DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
 						ss.receive(packet);
-						Message msg = new Message(packet.getData());
-						MessageType op = MessageType.getType(msg.messagetype);
+						byte[] data = packet.getData();
+						DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+						int messagetype = dis.readInt();
+						dis.close();
+						MessageType op = MessageType.getType(messagetype);
 						switch(op){
 						case GETREPLY:
+							GetReplyMessage msg = new GetReplyMessage();
+							msg.decodeMessage(data);
 							String requestid = msg.reqid;
 							long replierid = msg.id;
 							byte[] value = msg.value;
@@ -148,8 +154,10 @@ public class ClientReplyHandler implements Runnable {
 							}
 							break;
 						case PUTREPLY:
-							long key = msg.key;	
-							long replierid1 = msg.id;
+							PutReplyMessage pmsg = new PutReplyMessage();
+							pmsg.decodeMessage(data);
+							long key = pmsg.key;	
+							long replierid1 = pmsg.id;
 							synchronized(this.putReplies){
 								Set<Long> current = this.putReplies.get(key);
 								if(current==null){
