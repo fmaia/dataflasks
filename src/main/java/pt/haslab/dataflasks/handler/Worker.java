@@ -299,15 +299,15 @@ public class Worker implements Runnable {
 			}
 			this.log.info("Anti entropy - going to ask for keys to "+this.msg.getMessageID()+" keystoRequest:"+toRequest.size());
 			if(this.store.getClass().equals(KVDedupStoreFileSystem.class)){
-				int reqmsgtype = MessageType.getValueType(MessageType.MISSINGHASHREQ);
 				//Dedup mode is on. Just requesting blocks that this node does not currently hold.
 				HashMap<StoreKey,ArrayList<String>> missingH = new HashMap<StoreKey,ArrayList<String>>();
-				/*for (StoreKey k : toRequest){
-					ArrayList<String> missinghashes = this.store.getMissingHashes(k, msg.hashlist.get(k));
+				for (StoreKey k : toRequest){
+					ArrayList<String> missinghashes = this.store.getMissingHashes(k, ((ReplicaMaintenanceMessage)msg).hashlist.get(k));
 					missingH.put(k, missinghashes);
-				}*/
-				//byte[] tosend = new Message(reqmsgtype,this.myip,Peer.port,this.myid,toRequest,missingH).encodeMessage();
-				//sendhashesget(this.msg.ip,tosend);
+				}
+				MessageInterface reqmessage = new DedupReplicaRequestMessage(this.myip,Peer.port,this.myid,toRequest,missingH);
+				byte[] tosend = reqmessage.encodeMessage();
+				sendhashesget(this.msg.getMessageIP(),tosend);
 			}
 			else{
 				for (StoreKey k : toRequest){
