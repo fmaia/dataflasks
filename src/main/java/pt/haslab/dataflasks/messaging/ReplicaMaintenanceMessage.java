@@ -48,6 +48,7 @@ public class ReplicaMaintenanceMessage implements MessageInterface {
 				this.keys.add(tmp);
 				keynumber=keynumber -1;
 			}
+			this.hashlist = new HashMap<StoreKey,ArrayList<String>>();
 			int hashnumber = dis.readInt();
 			while(hashnumber>0){
 				StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
@@ -55,8 +56,10 @@ public class ReplicaMaintenanceMessage implements MessageInterface {
 				ArrayList<String> hsls = new ArrayList<String>();
 				while(filehashes>0){
 					hsls.add(dis.readUTF());
+					filehashes = filehashes - 1;
 				}
 				this.hashlist.put(tmp, hsls);
+				hashnumber = hashnumber -1;
 			}
 			dis.close();	
 		} catch (IOException e) {
@@ -70,7 +73,7 @@ public class ReplicaMaintenanceMessage implements MessageInterface {
 		DataOutputStream out = new DataOutputStream(baos);
 		byte[] res = null;
 		try {
-			out.writeInt(MessageType.getValueType(MessageType.REPLICAMAINTENANCE));
+			out.writeInt(MessageType.getValueType(this.messagetype));
 			out.writeLong(id);
 			out.writeUTF(ip);
 			out.writeInt(port);
@@ -79,8 +82,6 @@ public class ReplicaMaintenanceMessage implements MessageInterface {
 				out.writeLong(k.key);
 				out.writeLong(k.version);
 			}
-			out.flush();
-			res = baos.toByteArray();
 			out.writeInt(this.hashlist.size());
 			for(StoreKey k : this.hashlist.keySet()){
 				out.writeLong(k.key);
@@ -91,6 +92,8 @@ public class ReplicaMaintenanceMessage implements MessageInterface {
 					out.writeUTF(s);
 				}
 			}
+			out.flush();
+			res = baos.toByteArray();
 			out.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

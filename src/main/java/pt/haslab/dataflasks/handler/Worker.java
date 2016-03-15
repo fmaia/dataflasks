@@ -142,6 +142,7 @@ public class Worker implements Runnable {
 	
 	private int sendDedupPut(String targetip, DedupReplicaPutMessage msg){
 		try {
+			this.log.info("Going to send Dedup put");
 			DatagramSocket socket = this.sockethandler.getSocket();
 			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
@@ -329,6 +330,7 @@ public class Worker implements Runnable {
 					ArrayList<String> missinghashes = this.store.getMissingHashes(k, ((ReplicaMaintenanceMessage)msg).hashlist.get(k));
 					missingH.put(k, missinghashes);
 				}
+				this.log.info("Anti entropy - going to ask for "+missingH.size()+" missing hash groups");
 				MessageInterface reqmessage = new DedupReplicaRequestMessage(this.myip,Peer.port,this.myid,toRequest,missingH);
 				byte[] tosend = reqmessage.encodeMessage();
 				sendhashesget(ip,tosend);
@@ -344,13 +346,19 @@ public class Worker implements Runnable {
 			this.log.info("MISSINGHASHREQ received");
 			// Some node requested missing blocks. Need to reply with what we have
 			// Dedup mode is on
+			try{
 			HashMap<StoreKey,ArrayList<String>> askedHashes = ((DedupReplicaRequestMessage) this.msg).hashlist;
+			this.log.info("Asked Hashes:"+askedHashes.size());
 			for(StoreKey file : askedHashes.keySet()){
 				//Get missing blocks
 				HashMap<String,byte[]> missingblocks = ((KVDedupStoreFileSystem) this.store).getMissingBlocks(file, askedHashes.get(file));
 				//Send special put message for this file
 				DedupReplicaPutMessage tosend = new DedupReplicaPutMessage(this.myip,Peer.outport,this.myid,missingblocks,file);
 				this.sendDedupPut(ip, tosend);
+			}
+			}
+			catch(Throwable e){
+				e.printStackTrace();
 			}
 			break;
 		case DEDUPPUT:

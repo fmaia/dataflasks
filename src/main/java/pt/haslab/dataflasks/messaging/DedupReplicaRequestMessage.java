@@ -23,7 +23,6 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 	
 	
 	public DedupReplicaRequestMessage(){
-		
 	}
 	
 	public DedupReplicaRequestMessage(String ip, int port,long id, HashSet<StoreKey> keys, HashMap<StoreKey,ArrayList<String>> hashes){
@@ -49,14 +48,17 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 				keynumber=keynumber -1;
 			}
 			int hashnumber = dis.readInt();
+			this.hashlist = new HashMap<StoreKey,ArrayList<String>>();
 			while(hashnumber>0){
 				StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
 				int filehashes = dis.readInt();
 				ArrayList<String> hsls = new ArrayList<String>();
 				while(filehashes>0){
 					hsls.add(dis.readUTF());
+					filehashes = filehashes -1;
 				}
 				this.hashlist.put(tmp, hsls);
+				hashnumber = hashnumber -1;
 			}
 			dis.close();	
 		} catch (IOException e) {
