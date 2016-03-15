@@ -139,6 +139,22 @@ public class Worker implements Runnable {
 		return 1;
 	}
 	
+	
+	private int sendDedupPut(String targetip, DedupReplicaPutMessage msg){
+		try {
+			DatagramSocket socket = this.sockethandler.getSocket();
+			byte[] toSend = msg.encodeMessage();
+			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
+			socket.send(packet);
+			this.log.info("Dedup Put sent.");
+			this.sockethandler.returnSocket(socket);
+			return 0;
+		} catch (IOException e) {
+			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
+			//e.printStackTrace();
+		}
+		return 1;
+	}
 
 	public void run() {
 		MessageType operation = this.msg.getMessageType();
@@ -279,6 +295,14 @@ public class Worker implements Runnable {
 				}
 			}
 			break;
+		case GETREPLY:
+			//Reply to Exchange Gets
+			GetReplyMessage grmsg = (GetReplyMessage) msg;
+			this.log.info("Value with key:"+grmsg.key+" received in antiEntropy mechanism");
+			if(!this.store.haveseen(grmsg.key,grmsg.version)){
+				this.store.put(grmsg.key, grmsg.version, grmsg.value);
+			}
+			break;
 		case REPLICAMAINTENANCE:
 			//Exchange Operation
 			HashSet<StoreKey> msgkeys = ((ReplicaMaintenanceMessage)msg).keys;
@@ -307,25 +331,32 @@ public class Worker implements Runnable {
 				}
 				MessageInterface reqmessage = new DedupReplicaRequestMessage(this.myip,Peer.port,this.myid,toRequest,missingH);
 				byte[] tosend = reqmessage.encodeMessage();
-				sendhashesget(this.msg.getMessageIP(),tosend);
+				sendhashesget(ip,tosend);
 			}
 			else{
 				for (StoreKey k : toRequest){
-					sendget(this.msg.getMessageIP(),k.key,k.version,this.myip,Peer.port);
+					sendget(ip,k.key,k.version,this.myip,Peer.port);
 				}
 			}
 			break;
-		case GETREPLY:
-			//Reply to Exchange Gets
-			GetReplyMessage grmsg = (GetReplyMessage) msg;
-			this.log.info("Value with key:"+grmsg.key+" received in antiEntropy mechanism");
-			if(!this.store.haveseen(grmsg.key,grmsg.version)){
-				this.store.put(grmsg.key, grmsg.version, grmsg.value);
+		
+		case MISSINGHASHREQ:
+			this.log.info("MISSINGHASHREQ received");
+			// Some node requested missing blocks. Need to reply with what we have
+			// Dedup mode is on
+			HashMap<StoreKey,ArrayList<String>> askedHashes = ((DedupReplicaRequestMessage) this.msg).hashlist;
+			for(StoreKey file : askedHashes.keySet()){
+				//Get missing blocks
+				HashMap<String,byte[]> missingblocks = ((KVDedupStoreFileSystem) this.store).getMissingBlocks(file, askedHashes.get(file));
+				//Send special put message for this file
+				DedupReplicaPutMessage tosend = new DedupReplicaPutMessage(this.myip,Peer.outport,this.myid,missingblocks,file);
+				this.sendDedupPut(ip, tosend);
 			}
 			break;
-		case MISSINGHASHREQ:
-			// Some node requested missing blocks. Need to reply with what we have
-			
+		case DEDUPPUT:
+			this.log.info("DEDUPPUT received");
+			//Receiving missing files from replica maintenance mechanism with dedup mode on.
+			((KVDedupStoreFileSystem) this.store).dedupPut(((DedupReplicaPutMessage) msg).key,((DedupReplicaPutMessage) msg).version, ((DedupReplicaPutMessage) msg).blocks);
 			break;
 		default: 
 			this.log.info("Unrecognized message in Worker. Ignoring.");

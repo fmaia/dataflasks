@@ -105,6 +105,14 @@ public class PassiveThread implements Runnable {
 			res = new PutReplyMessage();
 			res.decodeMessage(data);
 			return res;
+		case MISSINGHASHREQ:
+			res = new DedupReplicaRequestMessage();
+			res.decodeMessage(data);
+			return res;
+		case DEDUPPUT:
+			res = new DedupReplicaPutMessage();
+			res.decodeMessage(data);
+			return res;
 		default:
 			return res;
 		}
@@ -123,6 +131,7 @@ public class PassiveThread implements Runnable {
 				DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 				int messagetype = dis.readInt();
 				dis.close();
+				log.debug("PASSIVE packet received with type number "+messagetype);
 				MessageInterface msg = readMessage(data,MessageType.getType(messagetype));
 				log.debug("PassiveThread Message Received of type:"+msg.getMessageType());
 				this.exService.submit(new Worker(myip,myid,this.store,this.view,this.chance,this.smart,this.log,this.rnd,msg,this.sockethandler));
@@ -135,7 +144,11 @@ public class PassiveThread implements Runnable {
 			} catch (IOException e) {
 				log.error("PassiveThread ERROR in run()!");
 				e.printStackTrace();
-			} 
+			}
+			catch (Throwable e){
+				log.error("PassiveThread ERROR throwable.");
+				e.printStackTrace();
+			}
 		}	
 
 	}

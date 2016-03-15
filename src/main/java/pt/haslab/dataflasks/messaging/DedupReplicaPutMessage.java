@@ -5,33 +5,31 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 
 import pt.haslab.dataflasks.store.StoreKey;
 
-public class DedupReplicaRequestMessage implements MessageInterface {
+public class DedupReplicaPutMessage implements MessageInterface {
 
-	
-	public MessageType messagetype = MessageType.MISSINGHASHREQ;
+	public MessageType messagetype = MessageType.DEDUPPUT;
 	public String ip;
 	public int port;
 	public long id;
-	public HashSet<StoreKey> keys;
-	public HashMap<StoreKey,ArrayList<String>> hashlist;
+	public long key;
+	public long version;
+	public HashMap<String,byte[]> blocks;
 	
-	
-	public DedupReplicaRequestMessage(){
+	public DedupReplicaPutMessage(){
 		
 	}
 	
-	public DedupReplicaRequestMessage(String ip, int port,long id, HashSet<StoreKey> keys, HashMap<StoreKey,ArrayList<String>> hashes){
+	public DedupReplicaPutMessage(String ip, int port,long id, HashMap<String,byte[]> blocks, StoreKey key){
 		this.ip = ip;
 		this.port = port;
 		this.id = id;
-		this.keys = keys;
-		this.hashlist = hashes;
+		this.blocks = blocks;
+		this.key = key.key;
+		this.version = key.version;
 	}
 	
 	public void decodeMessage(byte[] packet) {
@@ -41,30 +39,22 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 			this.id = dis.readLong();
 			this.ip = dis.readUTF();
 			this.port = dis.readInt();
+			this.key = dis.readLong();
+			this.version = dis.readLong();
 			int keynumber = dis.readInt();
-			this.keys = new HashSet<StoreKey>();
+			this.blocks = new HashMap<String,byte[]>();
 			while(keynumber>0){
-				StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
-				this.keys.add(tmp);
+				String tmp = dis.readUTF();
+				int nvaluesize = dis.readInt();
+				byte[] block = new byte[nvaluesize];
+				dis.read(block, 0, nvaluesize);
+				this.blocks.put(tmp, block);
 				keynumber=keynumber -1;
 			}
-			int hashnumber = dis.readInt();
-			while(hashnumber>0){
-				StoreKey tmp = new StoreKey(dis.readLong(),dis.readLong());
-				int filehashes = dis.readInt();
-				ArrayList<String> hsls = new ArrayList<String>();
-				while(filehashes>0){
-					hsls.add(dis.readUTF());
-				}
-				this.hashlist.put(tmp, hsls);
-			}
+			
 			dis.close();	
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		catch (Throwable e) {
-			System.out.println("ERROR DECODING");
 			e.printStackTrace();
 		}
 	}
@@ -78,20 +68,14 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 			out.writeLong(id);
 			out.writeUTF(ip);
 			out.writeInt(port);
-			out.writeInt(keys.size());
-			for(StoreKey k : keys){
-				out.writeLong(k.key);
-				out.writeLong(k.version);
-			}
-			out.writeInt(this.hashlist.size());
-			for(StoreKey k : this.hashlist.keySet()){
-				out.writeLong(k.key);
-				out.writeLong(k.version);
-				ArrayList<String> lst = this.hashlist.get(k);
-				out.writeInt(lst.size());
-				for(String s : lst){
-					out.writeUTF(s);
-				}
+			out.writeLong(key);
+			out.writeLong(version);
+			out.writeInt(blocks.size());
+			for(String k : blocks.keySet()){
+				out.writeUTF(k);
+				byte[] block = blocks.get(k);
+				out.writeInt(block.length);
+				out.write(block);
 			}
 			out.flush();
 			res = baos.toByteArray();

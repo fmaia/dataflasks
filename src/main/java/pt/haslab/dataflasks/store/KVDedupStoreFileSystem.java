@@ -15,6 +15,7 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.store;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -310,6 +311,51 @@ public class KVDedupStoreFileSystem implements KVStore{
 			}
 		}
 		return res;
+	}
+	
+	public synchronized HashMap<String,byte[]> getMissingBlocks(StoreKey k, ArrayList<String> missing){
+		HashMap<String,byte[]> res = new HashMap<String,byte[]>();
+		DedupStoreFile thisfile = this.mystore.get(k);
+		for(String blockk : thisfile.listofblocks){
+			byte[] blockdata = new byte[0];
+			if(missing.contains(blockk)){
+				//We need to add the block data
+				 blockdata = this.readBlock(this.indexofblocks.get(blockk));
+			}
+			res.put(blockk, blockdata);
+		}
+		return res;
+	}
+	
+	private byte[] reconstructFile(HashMap<String,byte[]> blocks){
+		int size = 0;
+		ByteArrayOutputStream buf = new ByteArrayOutputStream();
+		for(String bk : blocks.keySet()){
+			byte[] b = blocks.get(bk);
+			if(b.length == 0){
+				//block we should already have
+				b = this.readBlock(this.indexofblocks.get(bk));
+			}
+			int bsize = b.length;
+			buf.write(b, size, bsize);
+			size = size + bsize;
+			
+		}
+		return buf.toByteArray();
+	}
+	
+	public synchronized boolean dedupPut(long key, long version, HashMap<String,byte[]> blocks) {
+		this.seenit(key, version);
+		int sslice = this.getSliceForKey(key);
+		if(this.slice==sslice){
+			DedupStoreFile nfile = this.writeData(key, version, this.reconstructFile(blocks));
+			this.mystore.put(new StoreKey(key, version), nfile);
+			return true;
+		}
+		else{
+			//log.debug("Object received but does not belong in this Store. ("+key+","+data.toString()+")");
+			return false;
+		}
 	}
 	
 	//Store key log management

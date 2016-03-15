@@ -8,7 +8,8 @@ public enum MessageType {
 	GETREPLY (10),
 	PUTREPLY (11),
 	MISSINGHASHREQ (50),
-	MISSINGHASHREPLY (51);
+	MISSINGHASHREPLY (51),
+	DEDUPPUT (52);
 	private final int serial;
 	
 	MessageType(int serial){
@@ -35,6 +36,8 @@ public enum MessageType {
 			return MISSINGHASHREQ;
 		case 51:
 			return MISSINGHASHREPLY;
+		case 52:
+			return DEDUPPUT;
 		default:
 			return STOP;
 		}
@@ -56,6 +59,8 @@ public enum MessageType {
 			return 50;
 		case MISSINGHASHREPLY:
 			return 51;
+		case DEDUPPUT:
+			return 52;
 		default:
 			return 5;
 		}
