@@ -110,7 +110,7 @@ public class Worker implements Runnable {
 	private int sendget(String targetip, Long key, Long version, String ip, int port){
 		try {
 			DatagramSocket socket = this.sockethandler.getSocket();
-			MessageInterface msg = new GetMessage(ip,Peer.port,key,version,"intern"+this.myid+getAeReqCount(),this.myid);
+			MessageInterface msg = new GetMessage(ip,Peer.port,key,version,"intern"+this.myid+":"+getAeReqCount(),this.myid);
 			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
 			socket.send(packet);
@@ -234,6 +234,7 @@ public class Worker implements Runnable {
 				this.store.logreq(requestid);
 				temp = this.store.get(new StoreKey(requestedkey,requestedversion));
 				if(temp!=null){
+					this.log.debug("GET regular request."+temp.toString()+" "+temp.length);
 					//Send value to Client
 					float achance = this.rnd.nextFloat();
 					if(achance<=this.chance){
@@ -257,6 +258,7 @@ public class Worker implements Runnable {
 					}
 				}
 				else{
+					this.log.debug("GET regular request. temp is NULL.");
 					int objslice = this.store.getSliceForKey(requestedkey);
 					ArrayList<PeerData> lsp = this.view.havePeerFromSlice(objslice);
 					//Do not hold the value - need to forward the request.
@@ -331,7 +333,7 @@ public class Worker implements Runnable {
 					missingH.put(k, missinghashes);
 				}
 				this.log.info("Anti entropy - going to ask for "+missingH.size()+" missing hash groups");
-				MessageInterface reqmessage = new DedupReplicaRequestMessage(this.myip,Peer.port,this.myid,toRequest,missingH);
+				MessageInterface reqmessage = new DedupReplicaRequestMessage(this.myip,Peer.port,this.myid,"intern"+this.myid+":"+getAeReqCount(),toRequest,missingH);
 				byte[] tosend = reqmessage.encodeMessage();
 				sendhashesget(ip,tosend);
 			}

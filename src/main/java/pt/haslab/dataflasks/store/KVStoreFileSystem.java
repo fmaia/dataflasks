@@ -191,7 +191,16 @@ public class KVStoreFileSystem implements KVStore{
 	
 	public synchronized byte[] get(StoreKey key) {
 		StoreFile f = this.mystore.get(key);
-		return this.readData(f);
+		if(f == null){
+			return null;
+		}
+		byte[] res = this.readData(f); 
+		if(res.length == 0){
+			return null;
+		}
+		else{
+			return res;
+		}
 	}
 	
 	private byte[] readData(StoreFile f){

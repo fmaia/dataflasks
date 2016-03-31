@@ -18,6 +18,7 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 	public String ip;
 	public int port;
 	public long id;
+	public String reqid;
 	public HashSet<StoreKey> keys;
 	public HashMap<StoreKey,ArrayList<String>> hashlist;
 	
@@ -25,12 +26,13 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 	public DedupReplicaRequestMessage(){
 	}
 	
-	public DedupReplicaRequestMessage(String ip, int port,long id, HashSet<StoreKey> keys, HashMap<StoreKey,ArrayList<String>> hashes){
+	public DedupReplicaRequestMessage(String ip, int port,long id, String reqid, HashSet<StoreKey> keys, HashMap<StoreKey,ArrayList<String>> hashes){
 		this.ip = ip;
 		this.port = port;
 		this.id = id;
 		this.keys = keys;
 		this.hashlist = hashes;
+		this.reqid = reqid;
 	}
 	
 	public void decodeMessage(byte[] packet) {
@@ -40,6 +42,7 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 			this.id = dis.readLong();
 			this.ip = dis.readUTF();
 			this.port = dis.readInt();
+			this.reqid = dis.readUTF();
 			int keynumber = dis.readInt();
 			this.keys = new HashSet<StoreKey>();
 			while(keynumber>0){
@@ -80,6 +83,7 @@ public class DedupReplicaRequestMessage implements MessageInterface {
 			out.writeLong(id);
 			out.writeUTF(ip);
 			out.writeInt(port);
+			out.writeUTF(reqid);
 			out.writeInt(keys.size());
 			for(StoreKey k : keys){
 				out.writeLong(k.key);

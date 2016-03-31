@@ -226,7 +226,16 @@ public class KVDedupStoreFileSystem implements KVStore{
 	
 	public synchronized byte[] get(StoreKey key) {
 		DedupStoreFile f = this.mystore.get(key);
-		return this.readData(f);
+		if(f == null){
+			return null;
+		}
+		byte[] res = this.readData(f); 
+		if(res.length == 0){
+			return null;
+		}
+		else{
+			return res;
+		}
 	}
 	
 	private byte[] readData(DedupStoreFile f){
