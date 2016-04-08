@@ -16,13 +16,16 @@ See the License for the specific language governing permissions and limitations 
 package pt.haslab.dataflasks.client;
 
 
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.net.DatagramPacket;
+import java.io.OutputStream;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -44,6 +47,7 @@ public class Client implements PLAPI {
 	private String myid;
 	
 	private DatagramSocket sendersocket;
+        private ReliableSocket rsocket;
 	
 	public Client(String id,LoadBalancer lb,String ip,int port,int senderport,int nputreps,long waittimeout,DFLogger log){
 		this.log = log;
@@ -54,19 +58,27 @@ public class Client implements PLAPI {
 		this.nputrequired = nputreps;
 		this.myid = id; 
 		try {
-			this.sendersocket = new DatagramSocket(senderport);
+			//this.sendersocket = new DatagramSocket(senderport);
+                        this.rsocket = new ReliableSocket();
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}
+		} catch (IOException ex) {
+                    ex.printStackTrace();
+            }
 		this.handler = new ClientReplyHandler(ip, port,this.nputrequired,waittimeout,log);
 		new Thread(handler).start();
 		log.info("Client STARTED. IP:"+myip+" PORT:"+myport);
 	}
 	
 	public void stop(){
-		synchronized(this.sendersocket){
-			this.sendersocket.close();
+		synchronized(this.rsocket){
+                    try {
+                        //this.sendersocket.close();
+                        this.rsocket.close();
+                    } catch (IOException ex) {
+                        ex.printStackTrace();
+                    }
 		}
 		this.handler.stop();
 	}
@@ -76,10 +88,19 @@ public class Client implements PLAPI {
 		try { 
 			MessageInterface msg = new PutMessage(this.myip,this.myport,key,version,value,Long.parseLong(myid));
 			byte[] toSend = msg.encodeMessage();
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			synchronized(this.sendersocket){
-				this.sendersocket.send(packet);		
-			}
+			//DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
+			//synchronized(this.sendersocket){
+			//	this.sendersocket.send(packet);		
+			//}
+                        synchronized(this.rsocket){
+                            this.rsocket = new ReliableSocket(p.getIp(),Peer.port);
+                            OutputStream os= this.rsocket.getOutputStream();
+                            DataOutputStream dos = new DataOutputStream(os);
+                            dos.writeInt(toSend.length);
+                            dos.flush();
+                            dos.write(toSend, 0, toSend.length);
+                            os.flush();
+                        }
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendput Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
@@ -93,10 +114,20 @@ public class Client implements PLAPI {
 		try {
 			MessageInterface msg = new GetMessage(this.myip,this.myport,key,version, requestid,Long.parseLong(myid));
 			byte[] toSend = msg.encodeMessage();
-			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			synchronized(this.sendersocket){
-				this.sendersocket.send(packet);	
-			}
+			//DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
+                        
+                        //synchronized(this.sendersocket){
+			//	this.sendersocket.send(packet);	
+			//}
+                        synchronized(this.rsocket){
+                            this.rsocket = new ReliableSocket(p.getIp(),Peer.port);
+                            OutputStream os= this.rsocket.getOutputStream();
+                            DataOutputStream dos = new DataOutputStream(os);
+                            dos.writeInt(toSend.length);
+                            dos.flush();
+                            dos.write(toSend, 0, toSend.length);
+                            os.flush();
+                        }   
 			return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget Client. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);

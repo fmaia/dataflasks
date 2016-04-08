@@ -15,7 +15,9 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.handler;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -24,6 +26,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
+import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.pss.PSS;
 
@@ -56,6 +59,7 @@ public class Worker implements Runnable {
 	private MessageInterface msg;
 	private String myip;
 	private SenderSocketHandler sockethandler;
+        private ReliableSocket rs;
 	
 	public Worker(String ip,Long id,KVStore store, PSS view, float chance,
 			boolean smart,DFLogger log, Random rnd, MessageInterface msg, SenderSocketHandler sockethandler){
@@ -78,13 +82,24 @@ public class Worker implements Runnable {
 			try {
 				//Connecting to host
 				this.log.debug("TRYING TO FORWARD MSG TO "+p.getID()+" MSGTYPE:"+this.msg.getClass());			
-				DatagramSocket socket = this.sockethandler.getSocket();
+				//DatagramSocket socket = this.sockethandler.getSocket();
+                                //ReliableSocket rs = this.sockethandler.getSocket();
+                                this.rs = new ReliableSocket(p.getIp(),Peer.port);
+                                OutputStream os = this.rs.getOutputStream();
+                                
 				byte[] toSend = this.msg.encodeMessage();
 				DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-				socket.send(packet);		
+				//socket.send(packet);		
+                                
+                                DataOutputStream dos = new DataOutputStream(os);
+                                dos.writeInt(toSend.length);
+                                dos.flush();
+                                dos.write(toSend, 0, toSend.length);
+                                os.flush();
+                                
 				this.log.debug("MSG FORWARDED TO "+p.getID()+" KEY: "+(this.msg.getMessageKey()));
-				this.sockethandler.returnSocket(socket);
-				
+				//this.sockethandler.returnSocket(socket);
+                                //this.sockethandler.returnSocket(rs);
 			} catch (IOException e) {
 				//log.error("Time:"+(System.nanoTime()-start));
 				log.error("Worker - forwardRequest PUT - IOException! STACKTRACE:"+e.getMessage()+" "+Arrays.deepToString(e.getStackTrace()));
@@ -96,11 +111,23 @@ public class Worker implements Runnable {
 	
 	private void replyClient(MessageInterface replymsg){
 		try {
-			DatagramSocket socket = this.sockethandler.getSocket();
+			log.debug("Worker: Going to reply to client at ip: "+this.msg.getMessageIP()+" port: "+this.msg.getMessagePort());
+                        //DatagramSocket socket = this.sockethandler.getSocket();
+                        //ReliableSocket rs = this.sockethandler.getSocket();
+                        this.rs = new ReliableSocket(this.msg.getMessageIP(),this.msg.getMessagePort());
+                        OutputStream os = this.rs.getOutputStream();
+                        
 			byte[] toSend = replymsg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(this.msg.getMessageIP()), this.msg.getMessagePort());
-			socket.send(packet);	
-			this.sockethandler.returnSocket(socket);
+			//socket.send(packet);	
+                        DataOutputStream dos = new DataOutputStream(os);
+                        dos.writeInt(toSend.length);
+                        dos.flush();
+                        dos.write(toSend, 0, toSend.length);
+                        os.flush();
+                        
+			//this.sockethandler.returnSocket(socket);
+                        //this.sockethandler.returnSocket(rs);
 		} catch (IOException e) {
 			log.error("Worker - replyClient - IOException!" + e.getMessage());
 		}
@@ -109,14 +136,25 @@ public class Worker implements Runnable {
 	
 	private int sendget(String targetip, Long key, Long version, String ip, int port){
 		try {
-			DatagramSocket socket = this.sockethandler.getSocket();
+			//DatagramSocket socket = this.sockethandler.getSocket();
+                        //ReliableSocket rs = this.sockethandler.getSocket();
+                        this.rs = new ReliableSocket(targetip,Peer.port);
+                        OutputStream os = this.rs.getOutputStream();
+                        
 			MessageInterface msg = new GetMessage(ip,Peer.port,key,version,"intern"+this.myid+":"+getAeReqCount(),this.myid);
 			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
-			socket.send(packet);
-			this.log.info("Anti entropy get sent.");
-			this.sockethandler.returnSocket(socket);
-			return 0;
+			//socket.send(packet);
+                        DataOutputStream dos = new DataOutputStream(os);
+                        dos.writeInt(toSend.length);
+                        dos.flush();
+                        dos.write(toSend, 0, toSend.length);
+                        os.flush();
+                        
+                        this.log.info("Anti entropy get sent.");
+			//this.sockethandler.returnSocket(socket);
+			//this.sockethandler.returnSocket(rs);
+                        return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
 			//e.printStackTrace();
@@ -126,12 +164,22 @@ public class Worker implements Runnable {
 	
 	private int sendhashesget(String targetip, byte[] toSend){
 		try {
-			DatagramSocket socket = this.sockethandler.getSocket();
+			//DatagramSocket socket = this.sockethandler.getSocket();
+                        //ReliableSocket rs = this.sockethandler.getSocket();
+                        this.rs = new ReliableSocket(targetip,Peer.port);
+                        OutputStream os = this.rs.getOutputStream();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
-			socket.send(packet);
-			this.log.info("Missing hash get sent.");
-			this.sockethandler.returnSocket(socket);
-			return 0;
+			//socket.send(packet);
+                        DataOutputStream dos = new DataOutputStream(os);
+                        dos.writeInt(toSend.length);
+                        dos.flush();
+                        dos.write(toSend, 0, toSend.length);
+                        os.flush();
+                        
+                        this.log.info("Missing hash get sent.");
+			//this.sockethandler.returnSocket(socket);
+			//this.sockethandler.returnSocket(rs);
+                        return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
 			//e.printStackTrace();
@@ -143,13 +191,22 @@ public class Worker implements Runnable {
 	private int sendDedupPut(String targetip, DedupReplicaPutMessage msg){
 		try {
 			this.log.info("Going to send Dedup put");
-			DatagramSocket socket = this.sockethandler.getSocket();
+			//DatagramSocket socket = this.sockethandler.getSocket();
+                        //ReliableSocket rs = this.sockethandler.getSocket();
+                        this.rs = new ReliableSocket(targetip,Peer.port);
+                        OutputStream os = rs.getOutputStream();
 			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(targetip), Peer.port);
-			socket.send(packet);
-			this.log.info("Dedup Put sent.");
-			this.sockethandler.returnSocket(socket);
-			return 0;
+			//socket.send(packet);
+                        DataOutputStream dos = new DataOutputStream(os);
+                        dos.writeInt(toSend.length);
+                        dos.flush();
+                        dos.write(toSend, 0, toSend.length);
+                        os.flush();
+                        
+                        this.log.info("Dedup Put sent.");
+			//this.sockethandler.returnSocket(socket);
+                        return 0;
 		} catch (IOException e) {
 			this.log.debug("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + targetip+":"+Peer.port);
 			//e.printStackTrace();
@@ -174,9 +231,15 @@ public class Worker implements Runnable {
 				if(stored){
 					log.info("Stored key:"+key);
 					float achance = this.rnd.nextFloat();
+                                        log.debug("stored 1");
+                                        log.debug("stored 1 - msg answer will be to :"+this.myip+":"+Peer.port);
 					ArrayList<PeerData> myview = this.view.getSliceLocalView();
+                                        log.debug("sotored2: "+myview.toString());
+                                        log.debug("stored 2");
 					if(achance<=this.chance){
+                                                log.debug("stores inside if");
 						//if this node stored the value should reply the client signaling such operation
+                                                log.debug("Worker: creating PutReplyMessage to "+this.myip+":"+Peer.port);
 						MessageInterface replymsg = new PutReplyMessage(this.myip,Peer.port,key,version,this.myid);
 						this.replyClient(replymsg);
 						//forwarding the request to other peers IN MY SLICE if it is a new obj.
@@ -184,6 +247,7 @@ public class Worker implements Runnable {
 						this.forwardMessage(myview);
 					}
 					else{
+                                                log.debug("stored inside lese");
 						this.log.info("STORED BUT CHANCE ("+achance+") DICTATED HOST WONT REPLY key:"+key);
 						this.forwardMessage(myview);
 						this.log.info("FORWARD AFTER CHANCE DICTATED IT WOULD NOT REPLY. ("+myview.size()+")");

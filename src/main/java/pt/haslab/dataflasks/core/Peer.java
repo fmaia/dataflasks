@@ -34,6 +34,7 @@ public interface Peer {
 	public static int outclientport = 4000;
 	public static int lbport = 5001;
 	public static int lboutport = 5002;
+        public static int maxCliQueue = 1000;
 
 	
 	public void main(String[] args);
