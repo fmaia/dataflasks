@@ -16,10 +16,8 @@ See the License for the specific language governing permissions and limitations 
 package pt.haslab.dataflasks.loadbalancing;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -27,7 +25,6 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.Random;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -44,7 +41,6 @@ public class DynamicLoadBalancer implements LoadBalancer, Runnable {
 	private boolean running;
 	private long interval;
 	private DatagramSocket sendersocket;
-        private ReliableSocket rs;
 	private String ip;
 
 	public DynamicLoadBalancer(DFLogger log, Random rnd,String bootip, String ip, long interval){
@@ -56,11 +52,6 @@ public class DynamicLoadBalancer implements LoadBalancer, Runnable {
 		this.ip = ip;
 		try {
 			this.sendersocket = new DatagramSocket(Peer.lboutport);
-                    try {
-                        this.rs = new ReliableSocket();
-                    } catch (IOException ex) {
-                        ex.printStackTrace();
-                    }
 		} catch (SocketException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
@@ -138,19 +129,12 @@ public class DynamicLoadBalancer implements LoadBalancer, Runnable {
 	
 	private synchronized int sendMsg(PeerData p, PSSMessage psg){
 		try {
-			this.rs = new ReliableSocket(p.getIp(),Peer.pssport);
-                        OutputStream os = this.rs.getOutputStream();  
+			
 			byte[] toSend = psg.encodeMessage();
 			this.log.debug("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()),  Peer.pssport);
 			this.log.debug("sending message to "+p.getIp()+":"+ Peer.pssport);
-			//sendersocket.send(packet);	
-                        DataOutputStream dos = new DataOutputStream(os);
-                        dos.writeInt(toSend.length);
-                        dos.flush();
-                        dos.write(toSend, 0, toSend.length);
-                        os.flush();
-                        
+			sendersocket.send(packet);	
 			this.log.debug("message sent to "+p.getIp()+":"+ Peer.pssport+" Message:"+ packet.toString());
 			return 0;
 		} catch (IOException e) {

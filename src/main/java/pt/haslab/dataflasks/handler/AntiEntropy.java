@@ -15,9 +15,7 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.handler;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -26,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Random;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -52,7 +49,6 @@ public class AntiEntropy implements Runnable{
 	private int myPort;
 	private long myID;
 	private DatagramSocket socketsender;
-        private ReliableSocket rs;
 	
 	public void stop(){
 		//this.socketsender.close();
@@ -73,13 +69,10 @@ public class AntiEntropy implements Runnable{
 		this.boottime = boottime;
 		try {
 			this.socketsender = new DatagramSocket(Peer.outantientropyport);
-                        this.rs = new ReliableSocket();
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (IOException ex) {
-                        ex.printStackTrace();
-            }
+		}
 		this.log.info("Anti Entropy initialized.");
 	}
 	 
@@ -91,14 +84,7 @@ public class AntiEntropy implements Runnable{
 			MessageInterface msg = new ReplicaMaintenanceMessage(myIp,myPort,myID,mykeys, hashes);
 			byte[] toSend = msg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.port);
-			//this.socketsender.send(packet);		
-                        this.rs = new ReliableSocket(p.getIp(),Peer.port);
-                        OutputStream os = this.rs.getOutputStream();
-                        DataOutputStream dos = new DataOutputStream(os);
-                        dos.writeInt(toSend.length);
-                        dos.flush();
-                        dos.write(toSend, 0, toSend.length);
-                        os.flush();    
+			this.socketsender.send(packet);		
 		} catch (IOException e) {
 			this.log.debug("ERROR sendPeerKeys in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+Peer.port);
 			//e.printStackTrace();

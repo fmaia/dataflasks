@@ -274,8 +274,6 @@ public class WikiPutter
 			while(repliers==null){
 				repliers = dfcli.put(key, ver , content);
 			}
-                        
-                        //COMENTAR ESTE GET NOS TESTES REAIS
 			byte[] res = dfcli.get(getreqid(), key, ver);
 			log.info("PUT/GET check key: "+key+" version:"+version+" "+Arrays.equals(content, res));
 		}

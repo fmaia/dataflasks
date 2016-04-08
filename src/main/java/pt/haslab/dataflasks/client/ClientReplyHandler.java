@@ -18,17 +18,14 @@ package pt.haslab.dataflasks.client;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.TreeSet;
-import net.rudp.ReliableServerSocket;
-import net.rudp.ReliableSocket;
+
 import pt.haslab.dataflasks.common.DFLogger;
-import pt.haslab.dataflasks.core.Peer;
 import pt.haslab.dataflasks.messaging.*;
 import pt.haslab.dataflasks.messaging.MessageType;
 
@@ -39,8 +36,6 @@ public class ClientReplyHandler implements Runnable {
 
 	private boolean running = true;
 	private DatagramSocket ss;
-        private ReliableServerSocket rss;
-        private ReliableSocket rs;
 	private DFLogger log;
 	private int myPort;
 	private String myIp;
@@ -58,9 +53,7 @@ public class ClientReplyHandler implements Runnable {
 		this.putreps = nputreps;
 		this.waitTimeout = waittimeout;
 		try{
-                        log.debug("CRH: Listening in ip: "+myIp+", port: "+myPort);
 			this.ss = new DatagramSocket(myPort,InetAddress.getByName(myIp));;
-                        this.rss = new ReliableServerSocket(this.ss,Peer.maxCliQueue);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -135,22 +128,9 @@ public class ClientReplyHandler implements Runnable {
 		//Waits for incoming connections and processes them.
 				while (this.running) {
 					try {
-                                                log.debug("CRH: waiting for remote connections");
-                                                this.rs = (ReliableSocket) this.rss.accept();
-                                                log.debug("CRH: Received connection from Peer "+this.rs.getRemoteSocketAddress());
-                                                //InputStream is = this.rs.getInputStream();
-                                                //byte [] data = new byte[65500];
-                                                //int bytes_read = is.read(data, 0, data.length);
-                                                //log.debug("CRH: received "+bytes_read+" bytes");
-                                                InputStream is = this.rs.getInputStream();
-                                                DataInputStream diss = new DataInputStream(is);
-                                                int size = diss.readInt();
-                                                byte [] data = new byte[size];
-                                                diss.readFully(data);
-                                                diss.close();
-						//DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
-						//ss.receive(packet);
-						//byte[] data = packet.getData();
+						DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
+						ss.receive(packet);
+						byte[] data = packet.getData();
 						DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 						int messagetype = dis.readInt();
 						dis.close();

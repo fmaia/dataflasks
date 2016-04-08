@@ -15,17 +15,12 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.core;
 
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.ArrayList;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -54,7 +49,6 @@ public class GroupConstruction {
 	public DFLogger log;
 	
 	private DatagramSocket sendersocket;
-        private ReliableSocket rs;
 	
 	private int cycle;
 	
@@ -66,13 +60,10 @@ public class GroupConstruction {
 		this.firstmessage = true;
 		try {
 			this.sendersocket = new DatagramSocket(Peer.outgroupport);
-                        this.rs = new ReliableSocket();
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (IOException ex) {
-                    ex.printStackTrace();
-            }
+		}
 	}
 	
 	//USE OUTSIDE SIMULATION------------------------------------------------------------
@@ -134,14 +125,10 @@ public class GroupConstruction {
 		this.ip = ip;
 		try {
 			this.sendersocket = new DatagramSocket(Peer.outgroupport);
-                        this.rs = new ReliableSocket();
-                        
 		} catch (SocketException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		} catch (IOException ex) {
-                    ex.printStackTrace();
-            }
+		}
 	}
 	
 	
@@ -322,19 +309,11 @@ public class GroupConstruction {
 	private synchronized int sendMsg(PeerData p, PSSMessage psg){
 		try {
 			this.log.debug("GroupConstruction - going to send message to "+p.getIp()+":"+Peer.pssport);
-			this.rs = new ReliableSocket(p.getIp(),Peer.pssport);
-                        OutputStream os = this.rs.getOutputStream();
-                        
+			
 			byte[] toSend = psg.encodeMessage();
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()), Peer.pssport);
 			this.log.debug("GroupConstruction - sending message to "+p.getIp()+":"+Peer.pssport);
-			//this.sendersocket.send(packet);
-                        DataOutputStream dos = new DataOutputStream(os);
-                        dos.writeInt(toSend.length);
-                        dos.flush();
-                        dos.write(toSend, 0, toSend.length);
-                        os.flush();
-                        
+			this.sendersocket.send(packet);	
 			this.log.debug("GroupConstruction - message sent to "+p.getIp()+":"+Peer.pssport+" Message:"+ packet.toString());
 			return 0;
 		} catch (IOException e) {

@@ -15,14 +15,11 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.loadbalancing;
 
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
-import net.rudp.ReliableServerSocket;
-import net.rudp.ReliableSocket;
 
 
 import pt.haslab.dataflasks.common.DFLogger;
@@ -36,8 +33,6 @@ public class LBPassiveThread extends Thread {
 	
 	public DFLogger log;
 	private DatagramSocket ss;
-        private ReliableServerSocket rss;
-        private ReliableSocket rs;
 	private boolean running;
 	private DynamicLoadBalancer dlb;
 
@@ -47,7 +42,6 @@ public class LBPassiveThread extends Thread {
 		this.log = log;
 		try {
 			this.ss = new DatagramSocket(Peer.lbport,InetAddress.getByName(ip));
-                        this.rss = new ReliableServerSocket(this.ss,Peer.maxCliQueue);
 		} catch (IOException e) {
 			log.error("LBPassiveThread ERROR in constructor!");
 		}
@@ -72,15 +66,10 @@ public class LBPassiveThread extends Thread {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-                                log.debug("LBPassive: waiting gor connection at "+this.rss.getLocalSocketAddress()+":"+this.rss.getLocalPort());
-                                this.rs = (ReliableSocket) this.rss.accept();
-                                log.debug("LBPassiveThread: Received connection from Peer "+this.rs.getRemoteSocketAddress());
-                                InputStream is = rs.getInputStream();
-                                DataInputStream diss = new DataInputStream(is);
-                                int size = diss.readInt();
-                                byte [] data = new byte[size];
-                                diss.readFully(data);
-                                diss.close();
+				DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
+				log.debug("LBPassiveThread waiting for packet....");
+				ss.receive(packet);
+				byte[] data = packet.getData();
 				PSSMessage msg = new PSSMessage(data,this.log);
 				this.dlb.processMeesage(msg);
 				

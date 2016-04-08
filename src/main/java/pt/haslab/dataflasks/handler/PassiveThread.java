@@ -18,18 +18,15 @@ package pt.haslab.dataflasks.handler;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.rudp.ReliableServerSocket;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
-import pt.haslab.dataflasks.core.Peer;
 import pt.haslab.dataflasks.messaging.*;
 import pt.haslab.dataflasks.pss.PSS;
 import pt.haslab.dataflasks.store.KVStore;
@@ -37,8 +34,6 @@ import pt.haslab.dataflasks.store.KVStore;
 public class PassiveThread implements Runnable {
 
 	private DatagramSocket ss;
-        private ReliableServerSocket rss;
-        private ReliableSocket rs;
 	private boolean running;
 	private DFLogger log;
 	private KVStore store;
@@ -76,7 +71,6 @@ public class PassiveThread implements Runnable {
 		
 		try {
 			this.ss = new DatagramSocket(port,InetAddress.getByName(ip));
-                        this.rss = new ReliableServerSocket(this.ss,Peer.maxCliQueue);
 		} catch (IOException e) {
 			log.error("PassiveThread ERROR in constructor!");
 		}
@@ -128,21 +122,13 @@ public class PassiveThread implements Runnable {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-                                log.debug("PassiveThread: waiting gor connection at "+this.rss.getLocalSocketAddress()+":"+this.rss.getLocalPort());
-				this.rs = (ReliableSocket) this.rss.accept();
-                                log.debug("PasssiveThread: Received connection from Peer "+this.rs.getRemoteSocketAddress());
-                                InputStream is = rs.getInputStream();
-                                DataInputStream diss = new DataInputStream(is);
-                                int size = diss.readInt();
-                                byte [] data = new byte[size];
-                                diss.readFully(data);
-                                diss.close();
-				//DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
-				//log.debug("PASSIVE waiting for packet....");
-				//ss.receive(packet);
-				//byte[] data = packet.getData();
-				log.debug("PASSIVE packet received with size "+data.length);
-                                DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
+				
+				DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
+				log.debug("PASSIVE waiting for packet....");
+				ss.receive(packet);
+				byte[] data = packet.getData();
+				log.debug("PASSIVE packet received with size "+packet.getLength());
+				DataInputStream dis = new DataInputStream(new ByteArrayInputStream(data));
 				int messagetype = dis.readInt();
 				dis.close();
 				log.debug("PASSIVE packet received with type number "+messagetype);

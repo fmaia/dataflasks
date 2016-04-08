@@ -16,10 +16,8 @@ See the License for the specific language governing permissions and limitations 
 package pt.haslab.dataflasks.pss;
 
 import java.io.BufferedReader;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
@@ -30,9 +28,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -62,7 +57,6 @@ public class PSS extends Thread{
 	private boolean running;
 	
 	private DatagramSocket sendersocket;
-        private ReliableSocket rs;
 	
 	private GroupConstruction groupc;
 	
@@ -74,13 +68,10 @@ public class PSS extends Thread{
 		
 		try {
 			this.sendersocket = new DatagramSocket(Peer.outpssport);
-                        this.rs = new ReliableSocket();
 		} catch (SocketException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
-		} catch (IOException ex) {
-                        ex.printStackTrace();
-            }
+		}
 		
 		this.grandom = new Random();
 		this.log = log;
@@ -148,13 +139,10 @@ public class PSS extends Thread{
 		
 		try {
 			this.sendersocket = new DatagramSocket(Peer.outpssport);
-                        this.rs = new ReliableSocket();
 		} catch (SocketException e2) {
 			// TODO Auto-generated catch block
 			e2.printStackTrace();
-		} catch (IOException ex) {
-                        ex.printStackTrace();
-            }
+		}
 		
 		this.grandom = new Random();
 		this.ip = ip;
@@ -209,12 +197,7 @@ public class PSS extends Thread{
 	
 	public void stopPSS(){
 		this.groupc.stop();
-            try {
-                //this.sendersocket.close();
-                this.rs.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+		//this.sendersocket.close();
 		this.running = false;
 		//this.log.info("PSS stopped.");
 	}
@@ -304,23 +287,16 @@ public class PSS extends Thread{
 
 	private synchronized int sendMsg(PeerData p, PSSMessage psg){
 		try {
-			this.rs = new ReliableSocket(p.getIp(),this.port);
-                        OutputStream os = this.rs.getOutputStream();
+			
 			byte[] toSend = psg.encodeMessage();
 			this.log.debug("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(p.getIp()),  this.port);
 			this.log.debug("sending message to "+p.getIp()+":"+ this.port);
-			//sendersocket.send(packet);
-                        DataOutputStream dos = new DataOutputStream(os);
-                        dos.writeInt(toSend.length);
-                        dos.flush();
-                        dos.write(toSend, 0, toSend.length);
-                        os.flush();
-                        
+			sendersocket.send(packet);	
 			this.log.debug("message sent to "+p.getIp()+":"+ this.port+" Message:"+ packet.toString());
 			return 0;
 		} catch (IOException e) {
-			this.log.error("ERROR sendget in PEER. "+e. getMessage()+" IP:PORT" + p.getIp()+":"+ this.port);
+			this.log.error("ERROR sendget in PEER. "+e.getMessage()+" IP:PORT" + p.getIp()+":"+ this.port);
 			//e.printStackTrace();
 		}
 		return 1;
@@ -328,19 +304,12 @@ public class PSS extends Thread{
 	
 	private synchronized int sendLBMsg(String target, PSSMessage psg){
 		try {
-			this.rs = new ReliableSocket(target,Peer.lbport);
-                        OutputStream os = this.rs.getOutputStream();
+			
 			byte[] toSend = psg.encodeMessage();
 			this.log.debug("pss message size = "+toSend.length);
 			DatagramPacket packet = new DatagramPacket(toSend,toSend.length,InetAddress.getByName(target),Peer.lbport);
 			this.log.debug("sending message to "+target+":"+Peer.lbport);
-			//sendersocket.send(packet);	
-                        DataOutputStream dos = new DataOutputStream(os);
-                        dos.writeInt(toSend.length);
-                        dos.flush();
-                        dos.write(toSend, 0, toSend.length);
-                        os.flush();
-                        
+			sendersocket.send(packet);	
 			this.log.debug("message sent to "+target+":"+Peer.lbport+" Message:"+ packet.toString());
 			return 0;
 		} catch (IOException e) {

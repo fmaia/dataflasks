@@ -15,16 +15,13 @@ See the License for the specific language governing permissions and limitations 
 */
 package pt.haslab.dataflasks.pss;
 
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import net.rudp.ReliableServerSocket;
-import net.rudp.ReliableSocket;
 
 import pt.haslab.dataflasks.common.DFLogger;
 
@@ -37,8 +34,6 @@ public class PSSThread extends Thread {
 	
 	public DFLogger log;
 	private DatagramSocket ss;
-        private ReliableServerSocket rss;
-        private ReliableSocket rs;
 	private boolean running;
 	private PSS pss;
 	
@@ -64,7 +59,6 @@ public class PSSThread extends Thread {
 		this.log.info("PSSThread after executor.");
 		try {
 			this.ss = new DatagramSocket(Peer.pssport,InetAddress.getByName(ip));
-                        this.rss = new ReliableServerSocket(this.ss,Peer.maxCliQueue);
 		} catch (IOException e) {
 			log.error("PSSThread ERROR in constructor!");
 		}
@@ -111,22 +105,15 @@ public class PSSThread extends Thread {
 		//Waits for incoming packets and asks Worker to process them.
 		while (running) {
 			try {
-                                log.debug("PSSThread: waiting gor connection at "+this.rss.getLocalSocketAddress()+":"+this.rss.getLocalPort());
-                                this.rs = (ReliableSocket) this.rss.accept();
-                                
-                                InputStream is = rs.getInputStream();
-                                DataInputStream diss = new DataInputStream(is);
-                                int size = diss.readInt();
-                                byte [] data = new byte[size];
-                                diss.readFully(data);
-                                diss.close();
-                                //ss.receive(packet);
-				//byte[] data = packet.getData();
-				//log.debug("PSSThread packet received with size "+packet.getLength);
-                                log.debug("PSSThread packet received with size "+data.length);
+				DatagramPacket packet = new DatagramPacket(new byte[65500],65500);
+				log.debug("PSSThread waiting for packet....");
+				ss.receive(packet);
+				byte[] data = packet.getData();
+				log.debug("PSSThread packet received with size "+packet.getLength());
 				log.debug("Packet received. Assigning a worker for the job.");
 				this.exService.submit(new PSSWorker(data,this.pss,this.log));
 				log.debug("PSS packet received....");
+				
 			} catch (SocketException e) {
 				log.info("PSSThread Server disconnected!");
 			} catch (IOException e) {
